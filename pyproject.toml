@@ -1,0 +1,54 @@
+[project]
+name = "jb-mech"
+version = "0.1.0"
+description = "Jailbreak Mechanism Analysis with Assistant Axis and GLP"
+requires-python = ">=3.10"
+dependencies = [
+    # Core ML
+    "torch>=2.0",
+    "transformers>=4.47.0",
+    "accelerate",
+    "vllm",
+
+    # GLP dependencies
+    "diffusers==0.36.0",
+    "einops==0.8.1",
+    "omegaconf==2.3.0",
+    "safetensors",
+    "baukit @ git+https://github.com/davidbau/baukit",
+
+    # Jailbreak generation
+    "nanogcg",
+
+    # Datasets
+    "datasets",
+
+    # Analysis
+    "scikit-learn",
+    "scipy",
+    "pandas",
+    "numpy",
+
+    # Visualization
+    "matplotlib",
+    "plotly",
+    "seaborn",
+
+    # Utils
+    "huggingface_hub",
+    "tqdm",
+    "jsonlines",
+    "jupyter",
+    "openai",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "black", "isort"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jb_mech"]
