@@ -1,2 +1,47 @@
+# Environment
 .env
 .venv
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Outputs and data (large files)
+outputs/
+*.pt
+*.pth
+*.safetensors
+*.bin
+
+# But keep example/small files if needed
+!data/examples/*.pt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# HuggingFace cache
+.cache/
+
+# Model downloads (very large)
+models/
