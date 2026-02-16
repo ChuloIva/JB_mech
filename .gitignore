@@ -20,15 +20,12 @@ dist/
 *.ipynb_checkpoints
 
 # Outputs and data (large files)
-outputs/
-*.pt
-*.pth
-*.safetensors
-*.bin
+outputs/llama-3.1-8b/responses
+
 
 # But keep example/small files if needed
 !data/examples/*.pt
-
+!outputs/llama-3.1-8b/axis.pt
 # IDE
 .idea/
 .vscode/
