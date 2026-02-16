@@ -39,6 +39,7 @@ logs/
 
 # HuggingFace cache
 .cache/
+data/gcg-evaluated-data/llama-3.1-8b-instruct_eval_data.parquet
 
 # Model downloads (very large)
 models/
