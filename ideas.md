@@ -1,0 +1,2 @@
+manifold copy - so the idea is to copy the manifold of a bigger model and tune a smaller model based on those responses, that way when we interpret it with AOs we are getting that manifold or the internal geometry of that (blackbox) model
+    - query specific / jailbrake specific, and then harness explores all the relevant things needed for this 
