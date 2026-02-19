@@ -314,6 +314,9 @@ def create_training_datapoint(
         padding=False,
         enable_thinking=False,
     )
+    # Handle BatchEncoding (returned by some tokenizers like Qwen3)
+    if hasattr(input_prompt_ids, 'input_ids'):
+        input_prompt_ids = input_prompt_ids.input_ids
     if not isinstance(input_prompt_ids, list):
         raise TypeError("Expected list of token ids from tokenizer")
 
@@ -327,6 +330,9 @@ def create_training_datapoint(
         padding=False,
         enable_thinking=False,
     )
+    # Handle BatchEncoding (returned by some tokenizers like Qwen3)
+    if hasattr(full_prompt_ids, 'input_ids'):
+        full_prompt_ids = full_prompt_ids.input_ids
     if not isinstance(full_prompt_ids, list):
         raise TypeError("Expected list of token ids from tokenizer")
 
