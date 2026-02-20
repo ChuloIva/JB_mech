@@ -18,6 +18,25 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig
 
+
+def get_device() -> str:
+    """Get the best available device (MPS for Mac, CUDA, or CPU)."""
+    if torch.backends.mps.is_available():
+        return "mps"
+    elif torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+
+def get_device_map(device: str) -> str | dict:
+    """Get appropriate device_map for model loading."""
+    if device == "mps":
+        # MPS doesn't support device_map="auto", use explicit mapping
+        return {"": "mps"}
+    elif device == "cuda":
+        return "auto"
+    return {"": "cpu"}
+
 # Add activation_oracles to path
 AO_PATH = Path(__file__).parent.parent.parent.parent / "third_party" / "activation_oracles"
 if str(AO_PATH) not in sys.path:
@@ -36,15 +55,27 @@ from nl_probes.utils.eval import run_evaluation
 
 
 def load_model_safe(model_name: str, dtype: torch.dtype, **model_kwargs) -> AutoModelForCausalLM:
-    """Load model with fallback attention implementation for ROCm compatibility."""
+    """Load model with fallback attention implementation for MPS/ROCm compatibility."""
+    device = get_device()
+    device_map = get_device_map(device)
+    print(f"Detected device: {device}")
+
+    # MPS-specific dtype handling (MPS doesn't fully support bfloat16 in all ops)
+    if device == "mps" and dtype == torch.bfloat16:
+        print("Note: Using float16 on MPS (bfloat16 has limited support)")
+        dtype = torch.float16
+
     # Try different attention implementations, including None (default/auto)
-    for attn_impl in ["sdpa", "eager", None]:
+    # On MPS, eager is most compatible
+    attn_impls = ["eager", "sdpa", None] if device == "mps" else ["sdpa", "eager", None]
+
+    for attn_impl in attn_impls:
         try:
             if attn_impl is not None:
                 print(f"Trying attention implementation: {attn_impl}")
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name,
-                    device_map="auto",
+                    device_map=device_map,
                     attn_implementation=attn_impl,
                     torch_dtype=dtype,
                     **model_kwargs,
@@ -54,7 +85,7 @@ def load_model_safe(model_name: str, dtype: torch.dtype, **model_kwargs) -> Auto
                 print("Trying default attention implementation...")
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name,
-                    device_map="auto",
+                    device_map=device_map,
                     torch_dtype=dtype,
                     **model_kwargs,
                 )
@@ -73,6 +104,8 @@ DEFAULT_ORACLE_PATHS = {
     "meta-llama/Llama-3.1-8B-Instruct": "adamkarvonen/checkpoints_latentqa_cls_past_lens_Llama-3_1-8B-Instruct",
     "meta-llama/Llama-3.3-70B-Instruct": "adamkarvonen/checkpoints_act_pretrain_cls_latentqa_fixed_posttrain_Llama-3_3-70B-Instruct",
     "unsloth/Llama-3.1-8B-Instruct-bnb-4bit": "adamkarvonen/checkpoints_latentqa_cls_past_lens_Llama-3_1-8B-Instruct",
+    "abdo-Mansour/Meta-Llama-3.1-8B-Instruct-BNB-8bit": "adamkarvonen/checkpoints_latentqa_cls_past_lens_Llama-3_1-8B-Instruct",
+    "meta-llama/Meta-Llama-3.1-8B-Instruct": "adamkarvonen/checkpoints_latentqa_cls_past_lens_Llama-3_1-8B-Instruct"
 }
 
 
@@ -509,4 +542,6 @@ class ActivationOracleWrapper:
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
         print("Cleanup done.")

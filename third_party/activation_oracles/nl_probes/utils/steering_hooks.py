@@ -188,7 +188,7 @@ def get_hf_activation_steering_hook(
             # Build steered vectors for this b
             steered_KD = (normed_list[b] *  norms_K1 * steering_coefficient).to(dtype)  # (K_b, d)
 
-            resid_BLD[b, pos_b, :] = steered_KD.detach() + orig_KD
+            resid_BLD[b, pos_b, :] = (steered_KD.detach() + orig_KD).to(resid_BLD.dtype)
 
         return (resid_BLD, *rest) if output_is_tuple else resid_BLD
 

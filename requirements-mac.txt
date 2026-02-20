@@ -1,0 +1,60 @@
+# Requirements for Mac (MPS) - ao_interpret_demo notebook
+# Skip flash-attn as it's CUDA-only
+
+# Core ML
+torch>=2.0
+transformers>=4.47.0
+accelerate
+peft>=0.10.0
+
+# Activation Oracles dependencies (Mac-compatible subset)
+codetiming
+datasets>=3.0.0
+dill
+hydra-core
+numpy<2.0.0
+pandas
+pyarrow>=19.0.0
+fastparquet
+pybind11
+pylatexenc
+tensordict>=0.8.0,<=0.9.1,!=0.9.0
+torchdata
+einops>=0.8.0
+wandb
+packaging>=20.0
+uvicorn
+fastapi
+typer
+pydantic>=2.0.0
+regex
+python-dotenv
+slist
+plotly
+anthropic
+openai
+tenacity
+matplotlib
+trl>=0.18.0
+bitsandbytes
+fire
+tqdm
+pytest
+ipykernel
+circuitsvis>=1.43.3
+jaxtyping
+huggingface-hub
+hf_transfer
+rapidfuzz
+
+# GLP dependencies
+diffusers>=0.36.0
+omegaconf>=2.3.0
+safetensors
+
+# Additional
+scikit-learn
+scipy
+seaborn
+jsonlines
+jupyter
