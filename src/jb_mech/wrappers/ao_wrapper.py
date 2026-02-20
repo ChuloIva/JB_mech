@@ -37,20 +37,31 @@ from nl_probes.utils.eval import run_evaluation
 
 def load_model_safe(model_name: str, dtype: torch.dtype, **model_kwargs) -> AutoModelForCausalLM:
     """Load model with fallback attention implementation for ROCm compatibility."""
-    for attn_impl in ["sdpa", "eager"]:
+    # Try different attention implementations, including None (default/auto)
+    for attn_impl in ["sdpa", "eager", None]:
         try:
-            print(f"Trying attention implementation: {attn_impl}")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                device_map="auto",
-                attn_implementation=attn_impl,
-                torch_dtype=dtype,
-                **model_kwargs,
-            )
-            print(f"Successfully loaded with {attn_impl}")
+            if attn_impl is not None:
+                print(f"Trying attention implementation: {attn_impl}")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    device_map="auto",
+                    attn_implementation=attn_impl,
+                    torch_dtype=dtype,
+                    **model_kwargs,
+                )
+                print(f"Successfully loaded with {attn_impl}")
+            else:
+                print("Trying default attention implementation...")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    device_map="auto",
+                    torch_dtype=dtype,
+                    **model_kwargs,
+                )
+                print("Successfully loaded with default attention")
             return model
         except Exception as e:
-            print(f"Failed with {attn_impl}: {e}")
+            print(f"Failed with {attn_impl or 'default'}: {e}")
             continue
     raise RuntimeError(f"Could not load model {model_name} with any attention implementation")
 
