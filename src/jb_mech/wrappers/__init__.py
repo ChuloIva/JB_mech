@@ -3,7 +3,7 @@
 from .model_loader import SharedModelLoader
 from .assistant_axis_wrapper import AssistantAxisWrapper
 from .glp_wrapper import GLPWrapper
-from .ao_wrapper import ActivationOracleWrapper, AOConfig, InterpretResult
+from .ao_wrapper import ActivationOracleWrapper, AOConfig, InterpretResult, VectorInterpretResult
 
 __all__ = [
     "SharedModelLoader",
@@ -12,4 +12,5 @@ __all__ = [
     "ActivationOracleWrapper",
     "AOConfig",
     "InterpretResult",
+    "VectorInterpretResult",
 ]

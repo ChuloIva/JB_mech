@@ -49,6 +49,7 @@ from nl_probes.utils.activation_utils import (
 )
 from nl_probes.utils.dataset_utils import (
     TrainingDataPoint,
+    FeatureResult,
     create_training_datapoint,
 )
 from nl_probes.utils.eval import run_evaluation
@@ -159,6 +160,17 @@ class InterpretResult:
     segment_responses: list[str]  # Responses for full segment (repeated)
 
 
+@dataclass
+class VectorInterpretResult:
+    """Result from interpreting an arbitrary activation vector."""
+
+    response: str
+    vector: torch.Tensor  # Shape: [hidden_dim] or [num_positions, hidden_dim]
+    layer: int
+    prompt: str
+    meta_info: dict[str, Any] = field(default_factory=dict)
+
+
 class ActivationOracleWrapper:
     """
     Wrapper for querying Activation Oracles using the official library.
@@ -240,7 +252,7 @@ class ActivationOracleWrapper:
 
         # Ensure all adapter weights are on the correct device
         device = next(model.parameters()).device
-        for name, param in model.named_parameters():
+        for _, param in model.named_parameters():
             if param.device != device:
                 param.data = param.data.to(device)
 
@@ -534,6 +546,234 @@ class ActivationOracleWrapper:
             print(f"  [{i:3d}] {marker} {token_str}")
         print("-" * 60)
         print(f"Selected: tokens {actual_start} to {actual_end} ({actual_end - actual_start} tokens)")
+
+    def interpret_vector(
+        self,
+        vector: torch.Tensor,
+        prompt: str = "What is this activation representing?",
+        layer: int | None = None,
+        steering_coefficient: float | None = None,
+        verbose: bool = False,
+        meta_info: dict[str, Any] | None = None,
+    ) -> VectorInterpretResult:
+        """
+        Interpret an arbitrary activation vector using the Activation Oracle.
+
+        Args:
+            vector: Activation tensor. Shape [hidden_dim] for single position,
+                   or [num_positions, hidden_dim] for multiple positions.
+            prompt: Question to ask the AO about this vector.
+            layer: Layer for the introspection prefix (defaults to capture_layer).
+            steering_coefficient: Override default coefficient.
+            verbose: Print progress info.
+            meta_info: Optional metadata to attach to result.
+
+        Returns:
+            VectorInterpretResult with the AO's interpretation.
+        """
+        results = self.interpret_vectors_batch(
+            vectors=[vector],
+            prompts=[prompt],
+            layer=layer,
+            steering_coefficient=steering_coefficient,
+            verbose=verbose,
+            meta_infos=[meta_info] if meta_info else None,
+        )
+        return results[0]
+
+    def interpret_vectors_batch(
+        self,
+        vectors: list[torch.Tensor],
+        prompts: list[str] | str = "What is this activation representing?",
+        layer: int | None = None,
+        steering_coefficient: float | None = None,
+        verbose: bool = False,
+        meta_infos: list[dict[str, Any]] | None = None,
+    ) -> list[VectorInterpretResult]:
+        """
+        Interpret multiple activation vectors in a single batched call.
+
+        This is more efficient than calling interpret_vector() multiple times
+        as it batches the forward passes.
+
+        Args:
+            vectors: List of activation tensors. Each can be [hidden_dim] or
+                    [num_positions, hidden_dim].
+            prompts: Single prompt (used for all) or list of prompts per vector.
+            layer: Layer for the introspection prefix (defaults to capture_layer).
+            steering_coefficient: Override default coefficient.
+            verbose: Print progress info.
+            meta_infos: Optional list of metadata dicts, one per vector.
+
+        Returns:
+            List of VectorInterpretResult, one per input vector.
+        """
+        if layer is None:
+            layer = self.capture_layer
+
+        if steering_coefficient is None:
+            steering_coefficient = self.config.steering_coefficient
+
+        # Normalize prompts to list
+        if isinstance(prompts, str):
+            prompts = [prompts] * len(vectors)
+        elif len(prompts) != len(vectors):
+            raise ValueError(f"Got {len(prompts)} prompts for {len(vectors)} vectors")
+
+        # Normalize meta_infos
+        if meta_infos is None:
+            meta_infos = [{}] * len(vectors)
+        elif len(meta_infos) != len(vectors):
+            raise ValueError(f"Got {len(meta_infos)} meta_infos for {len(vectors)} vectors")
+
+        # Prepare vectors: ensure 2D [num_positions, hidden_dim]
+        prepared_vectors = []
+        for v in vectors:
+            if v.dim() == 1:
+                v = v.unsqueeze(0)  # [hidden_dim] -> [1, hidden_dim]
+            elif v.dim() != 2:
+                raise ValueError(f"Vector must be 1D or 2D, got {v.dim()}D")
+            prepared_vectors.append(v)
+
+        # Create TrainingDataPoints
+        training_data = []
+        for i, (vec, prompt, meta) in enumerate(zip(prepared_vectors, prompts, meta_infos)):
+            num_positions = vec.shape[0]
+            dp = create_training_datapoint(
+                datapoint_type="arbitrary_vector",
+                prompt=prompt,
+                target_response="N/A",
+                layer=layer,
+                num_positions=num_positions,
+                tokenizer=self.tokenizer,
+                acts_BD=vec,
+                feature_idx=i,
+                meta_info=meta,
+            )
+            training_data.append(dp)
+
+        if verbose:
+            print(f"Interpreting {len(vectors)} vectors at layer {layer}")
+
+        # Run evaluation
+        injection_submodule = get_hf_submodule(self.model, self.config.injection_layer)
+
+        responses = run_evaluation(
+            eval_data=training_data,
+            model=self.model,
+            tokenizer=self.tokenizer,
+            submodule=injection_submodule,
+            device=self.device,
+            dtype=self.config.dtype,
+            global_step=-1,
+            lora_path=self.oracle_adapter_name,
+            eval_batch_size=self.config.eval_batch_size,
+            steering_coefficient=steering_coefficient,
+            generation_kwargs=self.config.generation_kwargs,
+            verbose=verbose,
+        )
+
+        # Build results
+        results = []
+        for i, (vec, prompt, meta, resp) in enumerate(
+            zip(vectors, prompts, meta_infos, responses)
+        ):
+            results.append(VectorInterpretResult(
+                response=resp.api_response,
+                vector=vec,
+                layer=layer,
+                prompt=prompt,
+                meta_info=meta,
+            ))
+
+        return results
+
+    def capture_response_activations(
+        self,
+        prompt: str,
+        response: str,
+        layer: int | None = None,
+        positions: str | list[int] = "last",
+    ) -> torch.Tensor:
+        """
+        Capture activations from a prompt + response at specified positions.
+
+        This is useful for computing target/current activations in delta attacks.
+
+        Args:
+            prompt: User prompt text.
+            response: Assistant response text.
+            layer: Layer to capture from (defaults to capture_layer).
+            positions: Which positions to capture:
+                - "first": First token of response
+                - "last": Last token of response
+                - "mean": Mean of all response tokens
+                - "all": All response tokens
+                - list[int]: Specific token indices (relative to response start)
+
+        Returns:
+            Tensor of shape [hidden_dim] for single position,
+            or [num_positions, hidden_dim] for multiple positions.
+        """
+        if layer is None:
+            layer = self.capture_layer
+
+        # Build full conversation
+        messages = [
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": response},
+        ]
+        formatted = self.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=False
+        )
+
+        # Get prompt-only to find response start
+        prompt_messages = [{"role": "user", "content": prompt}]
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            prompt_messages, tokenize=False, add_generation_prompt=True
+        )
+
+        # Tokenize to find boundaries
+        prompt_ids = self.tokenizer.encode(formatted_prompt, add_special_tokens=False)
+        response_ids = self.tokenizer.encode(response, add_special_tokens=False)
+
+        response_start = len(prompt_ids)
+        response_token_end = response_start + len(response_ids)
+
+        # Collect activations (no adapters)
+        inputs = self.tokenizer(formatted, return_tensors="pt").to(self.device)
+        inputs_dict = {
+            "input_ids": inputs["input_ids"],
+            "attention_mask": inputs["attention_mask"],
+        }
+        submodule = get_hf_submodule(self.model, layer)
+
+        self.model.disable_adapters()
+        acts_by_layer = collect_activations_multiple_layers(
+            model=self.model,
+            submodules={layer: submodule},
+            inputs_BL=inputs_dict,
+            min_offset=None,
+            max_offset=None,
+        )
+        self.model.enable_adapters()
+
+        acts = acts_by_layer[layer][0]  # [seq_len, hidden_dim]
+
+        # Extract requested positions
+        if positions == "first":
+            return acts[response_start].cpu()
+        elif positions == "last":
+            return acts[response_token_end - 1].cpu()
+        elif positions == "mean":
+            return acts[response_start:response_token_end].mean(dim=0).cpu()
+        elif positions == "all":
+            return acts[response_start:response_token_end].cpu()
+        elif isinstance(positions, list):
+            indices = [response_start + p for p in positions]
+            return acts[indices].cpu()
+        else:
+            raise ValueError(f"Unknown positions: {positions}")
 
     def cleanup(self):
         """Free model memory."""
