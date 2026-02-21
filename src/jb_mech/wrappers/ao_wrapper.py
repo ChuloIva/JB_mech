@@ -55,8 +55,22 @@ from nl_probes.utils.dataset_utils import (
 from nl_probes.utils.eval import run_evaluation
 
 
-def load_model_safe(model_name: str, dtype: torch.dtype, **model_kwargs) -> AutoModelForCausalLM:
-    """Load model with fallback attention implementation for MPS/ROCm compatibility."""
+def load_model_safe(
+    model_name: str,
+    dtype: torch.dtype,
+    attn_implementation: str | None = None,
+    **model_kwargs
+) -> AutoModelForCausalLM:
+    """Load model with fallback attention implementation for MPS/ROCm compatibility.
+
+    Args:
+        model_name: HuggingFace model name
+        dtype: Model dtype
+        attn_implementation: Force specific attention implementation.
+            Use "eager" if you need attention weights (e.g., for capture_with_attention).
+            If None, will try implementations in order of preference.
+        **model_kwargs: Additional kwargs for model loading
+    """
     device = get_device()
     device_map = get_device_map(device)
     print(f"Detected device: {device}")
@@ -66,9 +80,14 @@ def load_model_safe(model_name: str, dtype: torch.dtype, **model_kwargs) -> Auto
         print("Note: Using float16 on MPS (bfloat16 has limited support)")
         dtype = torch.float16
 
-    # Try different attention implementations, including None (default/auto)
-    # On MPS, eager is most compatible
-    attn_impls = ["eager", "sdpa", None] if device == "mps" else ["sdpa", "eager", None]
+    # If specific implementation requested, try only that
+    if attn_implementation is not None:
+        attn_impls = [attn_implementation]
+    else:
+        # Try different attention implementations
+        # Prefer "eager" first since it supports attention weight capture
+        # SDPA/flash don't return attention weights
+        attn_impls = ["eager", "sdpa", None]
 
     for attn_impl in attn_impls:
         try:
@@ -169,6 +188,63 @@ class VectorInterpretResult:
     layer: int
     prompt: str
     meta_info: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class AttentionCaptureResult:
+    """Result from capturing activations with attention patterns."""
+
+    activations: torch.Tensor  # Shape depends on positions parameter (response activations)
+    attention_weights: torch.Tensor  # Shape: [num_heads, seq_len, seq_len]
+    layer: int
+    prompt_tokens: list[str]
+    response_tokens: list[str]
+    response_start_idx: int
+    response_end_idx: int
+    prompt_activations: torch.Tensor | None = None  # Shape: [prompt_len, hidden_dim]
+
+    def get_activation_at_position(self, idx: int) -> torch.Tensor:
+        """Get activation vector at a specific prompt position."""
+        if self.prompt_activations is None:
+            raise ValueError("prompt_activations not captured. Use positions='all' or ensure capture stores them.")
+        return self.prompt_activations[idx]
+
+    def get_attention_to_prompt(self) -> torch.Tensor:
+        """
+        Get attention from response tokens to prompt tokens.
+        Returns: [num_heads, response_len, prompt_len]
+        """
+        return self.attention_weights[
+            :, self.response_start_idx:self.response_end_idx, :self.response_start_idx
+        ]
+
+    def get_prompt_attention_scores(self, head: int | None = None) -> torch.Tensor:
+        """
+        Get how much attention each prompt token receives from response tokens.
+
+        Args:
+            head: Specific attention head, or None for mean across heads.
+
+        Returns: [prompt_len] - attention score per prompt token
+        """
+        attn = self.get_attention_to_prompt()  # [heads, resp_len, prompt_len]
+        if head is not None:
+            attn = attn[head:head+1]
+        # Mean across heads, then mean across response positions
+        return attn.mean(dim=0).mean(dim=0)  # [prompt_len]
+
+    def get_top_attended_tokens(self, k: int = 10, head: int | None = None) -> list[tuple[int, str, float]]:
+        """
+        Get the top-k most attended prompt tokens.
+
+        Returns: List of (index, token, attention_score)
+        """
+        scores = self.get_prompt_attention_scores(head)
+        top_indices = scores.argsort(descending=True)[:k]
+        return [
+            (idx.item(), self.prompt_tokens[idx], scores[idx].item())
+            for idx in top_indices
+        ]
 
 
 class ActivationOracleWrapper:
@@ -774,6 +850,198 @@ class ActivationOracleWrapper:
             return acts[indices].cpu()
         else:
             raise ValueError(f"Unknown positions: {positions}")
+
+    def capture_with_attention(
+        self,
+        prompt: str,
+        response: str,
+        layer: int | None = None,
+        positions: str | list[int] = "mean",
+    ) -> AttentionCaptureResult:
+        """
+        Capture activations AND attention patterns from a prompt + response.
+
+        This captures where the model is "looking" when generating the response,
+        which can reveal trigger tokens that cause refusal.
+
+        Args:
+            prompt: User prompt text.
+            response: Assistant response text.
+            layer: Layer to capture from (defaults to capture_layer).
+            positions: How to aggregate activations (same as capture_response_activations).
+
+        Returns:
+            AttentionCaptureResult with activations and attention analysis methods.
+        """
+        if layer is None:
+            layer = self.capture_layer
+
+        # Build full conversation
+        messages = [
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": response},
+        ]
+        formatted = self.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=False
+        )
+
+        # Get prompt-only to find response start
+        prompt_messages = [{"role": "user", "content": prompt}]
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            prompt_messages, tokenize=False, add_generation_prompt=True
+        )
+
+        # Tokenize
+        full_ids = self.tokenizer.encode(formatted, add_special_tokens=False)
+        prompt_ids = self.tokenizer.encode(formatted_prompt, add_special_tokens=False)
+        response_ids = self.tokenizer.encode(response, add_special_tokens=False)
+
+        response_start = len(prompt_ids)
+        response_end = response_start + len(response_ids)
+
+        # Prepare inputs
+        inputs = self.tokenizer(formatted, return_tensors="pt").to(self.device)
+
+        # Check if model uses flash/SDPA attention (which doesn't return attention weights)
+        # We need to temporarily switch to eager attention
+        original_attn_impl = None
+        attn_module = self.model.model.layers[layer].self_attn
+
+        # Try to detect and switch attention implementation
+        if hasattr(self.model.config, '_attn_implementation'):
+            original_attn_impl = self.model.config._attn_implementation
+            if original_attn_impl in ('flash_attention_2', 'sdpa'):
+                self.model.config._attn_implementation = 'eager'
+
+        # Some models store it differently
+        if hasattr(attn_module, '_flash_attn_uses_top_left_mask'):
+            # This is a flash attention module, we need to use a different approach
+            pass
+
+        # Hook to capture attention weights from the attention module
+        attention_weights = []
+
+        def attention_hook(module, args, output):
+            # output can be:
+            # - tuple (attn_output, attn_weights) when output_attentions=True
+            # - tuple (attn_output, attn_weights, past_key_value) for some models
+            # - just attn_output tensor in some cases
+            if isinstance(output, tuple):
+                for item in output:
+                    if isinstance(item, torch.Tensor) and item.dim() == 4:
+                        # Found attention weights: [batch, heads, seq, seq]
+                        attention_weights.append(item.detach().cpu())
+                        break
+
+        # Register hook on target layer's attention
+        handle = self.model.model.layers[layer].self_attn.register_forward_hook(attention_hook)
+
+        # Run forward pass with attention output
+        self.model.disable_adapters()
+        with torch.no_grad():
+            outputs = self.model(
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                output_attentions=True,
+                output_hidden_states=True,
+            )
+        self.model.enable_adapters()
+
+        handle.remove()
+
+        # Restore original attention implementation
+        if original_attn_impl is not None:
+            self.model.config._attn_implementation = original_attn_impl
+
+        # Extract hidden states for our layer
+        # outputs.hidden_states is tuple of [batch, seq_len, hidden_dim] per layer
+        hidden_states = outputs.hidden_states[layer + 1][0]  # +1 because index 0 is embeddings
+
+        # Get attention weights (from hook or outputs.attentions)
+        attn = None
+        if attention_weights:
+            attn = attention_weights[0][0]  # [num_heads, seq_len, seq_len]
+        elif outputs.attentions is not None and len(outputs.attentions) > layer:
+            attn = outputs.attentions[layer][0].cpu()  # [num_heads, seq_len, seq_len]
+
+        if attn is None:
+            raise RuntimeError(
+                f"Could not capture attention weights. "
+                f"This model may use flash/SDPA attention which doesn't return weights. "
+                f"Try loading the model with attn_implementation='eager'. "
+                f"Hook captured: {len(attention_weights)}, "
+                f"outputs.attentions len: {len(outputs.attentions) if outputs.attentions else 0}"
+            )
+
+        # Extract PROMPT activations (for trigger token interpretation)
+        prompt_acts = hidden_states[:response_start].cpu()  # [prompt_len, hidden_dim]
+
+        # Extract RESPONSE activations based on positions parameter
+        if positions == "first":
+            acts = hidden_states[response_start].cpu()
+        elif positions == "last":
+            acts = hidden_states[response_end - 1].cpu()
+        elif positions == "mean":
+            acts = hidden_states[response_start:response_end].mean(dim=0).cpu()
+        elif positions == "all":
+            acts = hidden_states[response_start:response_end].cpu()
+        elif isinstance(positions, list):
+            indices = [response_start + p for p in positions]
+            acts = hidden_states[indices].cpu()
+        else:
+            raise ValueError(f"Unknown positions: {positions}")
+
+        # Decode tokens for reference
+        prompt_tokens = [
+            self.tokenizer.decode([tid]).replace("\n", "\\n")
+            for tid in prompt_ids
+        ]
+        response_tokens = [
+            self.tokenizer.decode([tid]).replace("\n", "\\n")
+            for tid in response_ids
+        ]
+
+        return AttentionCaptureResult(
+            activations=acts,
+            attention_weights=attn,
+            layer=layer,
+            prompt_tokens=prompt_tokens,
+            response_tokens=response_tokens,
+            response_start_idx=response_start,
+            response_end_idx=response_end,
+            prompt_activations=prompt_acts,  # Now includes per-position prompt activations
+        )
+
+    def analyze_trigger_tokens(
+        self,
+        prompt: str,
+        response: str,
+        layer: int | None = None,
+        top_k: int = 10,
+    ) -> dict:
+        """
+        Convenience method to identify which prompt tokens the model attends to most.
+
+        Useful for understanding what triggers refusal behavior.
+
+        Args:
+            prompt: User prompt text.
+            response: Model response (e.g., refusal).
+            layer: Layer to analyze (defaults to capture_layer).
+            top_k: Number of top tokens to return.
+
+        Returns:
+            Dict with:
+                - top_tokens: List of (index, token, score) tuples
+                - attention_result: Full AttentionCaptureResult for further analysis
+        """
+        result = self.capture_with_attention(prompt, response, layer)
+        top_tokens = result.get_top_attended_tokens(k=top_k)
+
+        return {
+            "top_tokens": top_tokens,
+            "attention_result": result,
+        }
 
     def cleanup(self):
         """Free model memory."""
