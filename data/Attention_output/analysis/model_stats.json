@@ -1,0 +1,134 @@
+{
+  "llama-8b": {
+    "family": "llama",
+    "n_examples": 50,
+    "avg_special_ratio": 0.8806837873024743,
+    "std_special_ratio": 0.027588354589951576,
+    "avg_category_scores": {
+      "BOS": 0.531151351928711,
+      "ROLE_START": 0.012469973685219883,
+      "ROLE_SYSTEM": 0.0021889921836555004,
+      "ROLE_END": 0.06023451261222362,
+      "NEWLINE": 0.04299667060375214,
+      "TURN_END": 0.032349712327122686,
+      "ROLE_USER": 0.020430470705032348,
+      "ROLE_ASSISTANT": 0.12109040588140488
+    }
+  },
+  "qwen-14b": {
+    "family": "qwen",
+    "n_examples": 50,
+    "avg_special_ratio": 0.7678638248037953,
+    "std_special_ratio": 0.02538023811180118,
+    "avg_category_scores": {
+      "ROLE_START": 0.007034991763357539,
+      "ROLE_SYSTEM": 0.00024285233259433881,
+      "NEWLINE": 0.5972191425599158,
+      "TURN_END": 0.04803610356058925,
+      "ROLE_USER": 0.0025863310345448556,
+      "ROLE_ASSISTANT": 0.03236462574452162
+    }
+  },
+  "gemma-9b": {
+    "family": "gemma",
+    "n_examples": 50,
+    "avg_special_ratio": 0.7276072198533661,
+    "std_special_ratio": 0.05454929932187923,
+    "avg_category_scores": {
+      "BOS": 0.30674957275390624,
+      "ROLE_START": 0.048412968441843986,
+      "ROLE_USER": 0.03730670928955078,
+      "NEWLINE": 0.0664504274725914,
+      "TURN_END": 0.08399500370025635,
+      "ROLE_ASSISTANT": 0.10665308952331543
+    }
+  },
+  "gemma-27b": {
+    "family": "gemma",
+    "n_examples": 50,
+    "avg_special_ratio": 0.797933210966739,
+    "std_special_ratio": 0.03510634438079557,
+    "avg_category_scores": {
+      "BOS": 0.409132776260376,
+      "ROLE_START": 0.1020856008445844,
+      "ROLE_USER": 0.012424588371068239,
+      "NEWLINE": 0.034466660656034945,
+      "TURN_END": 0.06148622907698154,
+      "ROLE_ASSISTANT": 0.11693618342280387
+    }
+  },
+  "qwen-3b": {
+    "family": "qwen",
+    "n_examples": 50,
+    "avg_special_ratio": 0.7318665512968391,
+    "std_special_ratio": 0.02088554745097959,
+    "avg_category_scores": {
+      "ROLE_START": 0.3297340262681246,
+      "ROLE_SYSTEM": 0.0024007783830165864,
+      "NEWLINE": 0.2134154587984085,
+      "TURN_END": 0.027790858447551726,
+      "ROLE_USER": 0.004800490140914917,
+      "ROLE_ASSISTANT": 0.028297917842864992
+    }
+  },
+  "llama-1b": {
+    "family": "llama",
+    "n_examples": 50,
+    "avg_special_ratio": 0.7464886139418421,
+    "std_special_ratio": 0.02969730380783589,
+    "avg_category_scores": {
+      "BOS": 0.38981239318847655,
+      "ROLE_START": 0.08458648795261979,
+      "ROLE_SYSTEM": 0.002427108946722001,
+      "ROLE_END": 0.07788933437317609,
+      "NEWLINE": 0.04782943454571068,
+      "TURN_END": 0.038159407386556266,
+      "ROLE_USER": 0.008409114787355065,
+      "ROLE_ASSISTANT": 0.03427700757980347
+    }
+  },
+  "qwen-7b": {
+    "family": "qwen",
+    "n_examples": 50,
+    "avg_special_ratio": 0.7785925296193775,
+    "std_special_ratio": 0.024733479595933288,
+    "avg_category_scores": {
+      "ROLE_START": 0.005000711643260729,
+      "ROLE_SYSTEM": 0.0009354215860366822,
+      "NEWLINE": 0.6550696151517331,
+      "TURN_END": 0.022730157640762628,
+      "ROLE_USER": 0.0019172551180236042,
+      "ROLE_ASSISTANT": 0.023248738832771777
+    }
+  },
+  "llama-3b": {
+    "family": "llama",
+    "n_examples": 50,
+    "avg_special_ratio": 0.8596412152200749,
+    "std_special_ratio": 0.025340767792421764,
+    "avg_category_scores": {
+      "BOS": 0.5875823372602462,
+      "ROLE_START": 0.052352674016728995,
+      "ROLE_SYSTEM": 0.0011976121820043773,
+      "ROLE_END": 0.07951644200598822,
+      "NEWLINE": 0.015198670823592693,
+      "TURN_END": 0.02974244405515492,
+      "ROLE_USER": 0.00442952852929011,
+      "ROLE_ASSISTANT": 0.03854156155139208
+    }
+  },
+  "gemma-2b": {
+    "family": "gemma",
+    "n_examples": 50,
+    "avg_special_ratio": 0.8064136942079293,
+    "std_special_ratio": 0.0356842512999965,
+    "avg_category_scores": {
+      "BOS": 0.5051080322265625,
+      "ROLE_START": 0.08260536193847656,
+      "ROLE_USER": 0.011382999420166016,
+      "NEWLINE": 0.04593564033508301,
+      "TURN_END": 0.052619094848632815,
+      "ROLE_ASSISTANT": 0.07167095184326172
+    }
+  }
+}
