@@ -1043,6 +1043,151 @@ class ActivationOracleWrapper:
             "attention_result": result,
         }
 
+    def capture_topk_efficient(
+        self,
+        prompt: str,
+        response: str,
+        layer: int | None = None,
+        top_k: int = 3,
+    ) -> torch.Tensor:
+        """
+        Memory-efficient capture of activations at top-k attended tokens.
+
+        Uses two passes to avoid holding attention matrices and hidden states
+        simultaneously:
+            Pass 1: Get attention weights only → find top-k token indices
+            Pass 2: Get activations only at those specific positions
+
+        This is much more memory efficient than capture_with_attention() for
+        cases where you only need the final activations at top-k positions.
+
+        Args:
+            prompt: User prompt text.
+            response: Assistant response text.
+            layer: Layer to capture from (defaults to capture_layer).
+            top_k: Number of top-attended tokens to capture.
+
+        Returns:
+            Mean activation tensor from top-k attended prompt tokens [hidden_dim].
+        """
+        import gc
+
+        if layer is None:
+            layer = self.capture_layer
+
+        # Build full conversation
+        messages = [
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": response},
+        ]
+        formatted = self.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=False
+        )
+
+        # Get prompt-only to find response start
+        prompt_messages = [{"role": "user", "content": prompt}]
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            prompt_messages, tokenize=False, add_generation_prompt=True
+        )
+
+        # Tokenize to find boundaries
+        prompt_ids = self.tokenizer.encode(formatted_prompt, add_special_tokens=False)
+        response_ids = self.tokenizer.encode(response, add_special_tokens=False)
+
+        response_start = len(prompt_ids)
+        response_end = response_start + len(response_ids)
+
+        # Prepare inputs
+        inputs = self.tokenizer(formatted, return_tensors="pt").to(self.device)
+
+        # ============================================================
+        # PASS 1: Get attention weights only (no hidden states)
+        # ============================================================
+        attention_weights = []
+
+        def attention_hook(module, args, output):
+            if isinstance(output, tuple):
+                for item in output:
+                    if isinstance(item, torch.Tensor) and item.dim() == 4:
+                        # [batch, heads, seq, seq] - only keep what we need
+                        # Average over heads, get attention FROM response TO prompt
+                        attn = item[0].mean(dim=0)  # [seq, seq]
+                        # Only keep response->prompt attention pattern
+                        response_to_prompt = attn[response_start:response_end, :response_start]
+                        # Average over response positions, get per-prompt-token scores
+                        prompt_scores = response_to_prompt.mean(dim=0).cpu()  # [prompt_len]
+                        attention_weights.append(prompt_scores)
+                        break
+
+        handle = self.model.model.layers[layer].self_attn.register_forward_hook(attention_hook)
+
+        self.model.disable_adapters()
+        with torch.no_grad():
+            # Only get attentions, NOT hidden states
+            _ = self.model(
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                output_attentions=True,
+                output_hidden_states=False,  # Key: don't store hidden states
+            )
+        self.model.enable_adapters()
+        handle.remove()
+
+        if not attention_weights:
+            # Fallback: just return mean of response activations
+            gc.collect()
+            torch.cuda.empty_cache()
+            return self.capture_response_activations(prompt, response, layer=layer, positions="mean")
+
+        # Find top-k token indices
+        prompt_scores = attention_weights[0]
+        top_k_indices = prompt_scores.topk(min(top_k, len(prompt_scores))).indices.tolist()
+
+        # Clear memory from pass 1
+        del attention_weights, prompt_scores
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        # ============================================================
+        # PASS 2: Get activations at top-k positions only
+        # ============================================================
+        captured_acts = []
+
+        def activation_hook(module, args, output):
+            # output is (hidden_states,) or hidden_states
+            hidden = output[0] if isinstance(output, tuple) else output
+            # Only extract at top-k positions
+            for idx in top_k_indices:
+                captured_acts.append(hidden[0, idx, :].detach().cpu())
+
+        submodule = self.model.model.layers[layer]
+        handle = submodule.register_forward_hook(activation_hook)
+
+        self.model.disable_adapters()
+        with torch.no_grad():
+            # Only get hidden states at our layer (via hook), no attentions
+            _ = self.model(
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                output_attentions=False,  # Key: don't store attention matrices
+                output_hidden_states=False,  # We capture via hook
+            )
+        self.model.enable_adapters()
+        handle.remove()
+
+        # Return mean of top-k activations
+        if captured_acts:
+            result = torch.stack(captured_acts).mean(dim=0)
+        else:
+            # Fallback
+            result = self.capture_response_activations(prompt, response, layer=layer, positions="mean")
+
+        # Final cleanup
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        return result
+
     def cleanup(self):
         """Free model memory."""
         import gc
