@@ -12,16 +12,27 @@ from sklearn.decomposition import PCA
 from .config import DeltaAttackConfig, DEFAULT_CONFIG
 from .api import query_target_model, get_api_client
 from .evaluation import parse_thinking_response
-from .steering import capture_topk_attention_activations
+from .steering import capture_topk_attention_activations, capture_topk_with_details
+
+
+@dataclass
+class TopKTokenInfo:
+    """Information about top-k attended tokens for a single activation capture."""
+    indices: List[int]  # Token indices in the prompt
+    tokens: List[str]  # Decoded token strings
+    scores: List[float]  # Attention scores
+    activations: List[torch.Tensor]  # Individual activation vectors at each position
 
 
 @dataclass
 class WhyInterrogationResult:
     """Result from why-interrogation loop (contrastive)."""
     why_refuse_responses: List[str]  # "Why refuse?" from TARGET
-    why_refuse_activations: List[torch.Tensor]
+    why_refuse_activations: List[torch.Tensor]  # Mean of top-k for each iteration
+    why_refuse_topk: List[TopKTokenInfo]  # Per-iteration top-k token details
     why_comply_responses: List[str]  # "Why comply?" from Venice
-    why_comply_activations: List[torch.Tensor]
+    why_comply_activations: List[torch.Tensor]  # Mean of top-k for each iteration
+    why_comply_topk: List[TopKTokenInfo]  # Per-iteration top-k token details
     steering_direction: torch.Tensor
     method: str
     is_contrastive: bool
@@ -101,8 +112,10 @@ def run_why_interrogation(
 
     why_refuse_responses = []
     why_refuse_activations = []
+    why_refuse_topk = []
     why_comply_responses = []
     why_comply_activations = []
+    why_comply_topk = []
 
     # ========== PART 1: Get "why refuse?" from TARGET model ==========
     conversation_text = f"User: {initial_prompt}\nAssistant: {initial_response}"
@@ -141,9 +154,17 @@ def run_why_interrogation(
         why_refuse_responses.append(why_response)
         print(f"      Refuse {i+1}: {why_response[:60]}...")
 
-        # Capture activations
-        acts = capture_topk_attention_activations(ao, initial_prompt, why_response, layer=layer, top_k=top_k)
-        why_refuse_activations.append(acts)
+        # Capture activations WITH token details
+        mean_act, indices, tokens, scores, individual_acts = capture_topk_with_details(
+            ao, initial_prompt, why_response, layer=layer, top_k=top_k
+        )
+        why_refuse_activations.append(mean_act)
+        why_refuse_topk.append(TopKTokenInfo(
+            indices=indices,
+            tokens=tokens,
+            scores=scores,
+            activations=individual_acts,
+        ))
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -159,9 +180,17 @@ def run_why_interrogation(
         for i, comply_resp in enumerate(why_comply_responses):
             print(f"      Comply {i+1}: {comply_resp[:60]}...")
 
-            # Capture activations by emulating on proxy
-            acts = capture_topk_attention_activations(ao, initial_prompt, comply_resp, layer=layer, top_k=top_k)
-            why_comply_activations.append(acts)
+            # Capture activations WITH token details by emulating on proxy
+            mean_act, indices, tokens, scores, individual_acts = capture_topk_with_details(
+                ao, initial_prompt, comply_resp, layer=layer, top_k=top_k
+            )
+            why_comply_activations.append(mean_act)
+            why_comply_topk.append(TopKTokenInfo(
+                indices=indices,
+                tokens=tokens,
+                scores=scores,
+                activations=individual_acts,
+            ))
 
             gc.collect()
             torch.cuda.empty_cache()
@@ -207,8 +236,10 @@ def run_why_interrogation(
     return WhyInterrogationResult(
         why_refuse_responses=why_refuse_responses,
         why_refuse_activations=why_refuse_activations,
+        why_refuse_topk=why_refuse_topk,
         why_comply_responses=why_comply_responses,
         why_comply_activations=why_comply_activations,
+        why_comply_topk=why_comply_topk,
         steering_direction=steering_dir,
         method=method,
         is_contrastive=use_contrastive and len(why_comply_activations) > 0,

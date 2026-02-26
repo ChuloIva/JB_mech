@@ -76,6 +76,62 @@ def capture_topk_attention_activations(
         return ao.capture_response_activations(prompt, response, layer=layer, positions="mean")
 
 
+def capture_topk_with_details(
+    ao,  # ActivationOracleWrapper
+    prompt: str,
+    response: str,
+    layer: int,
+    top_k: int = 3,
+) -> Tuple[torch.Tensor, List[int], List[str], List[float], List[torch.Tensor]]:
+    """
+    Capture activations at top-k tokens WITH individual token details.
+
+    Returns:
+        Tuple of:
+        - mean_activation: Mean of top-k activations [hidden_dim]
+        - indices: List of top-k token indices
+        - tokens: List of decoded token strings
+        - scores: List of attention scores
+        - individual_activations: List of activation tensors at each position
+    """
+    try:
+        # Use capture_with_attention to get full details
+        result = ao.capture_with_attention(prompt, response, layer=layer, positions="mean")
+
+        # Get top-k attended tokens
+        top_tokens = result.get_top_attended_tokens(k=top_k)
+
+        indices = [t[0] for t in top_tokens]
+        tokens = [t[1] for t in top_tokens]
+        scores = [t[2] for t in top_tokens]
+
+        # Get individual activations at each top-k position
+        individual_acts = []
+        for idx in indices:
+            if result.prompt_activations is not None and idx < len(result.prompt_activations):
+                individual_acts.append(result.prompt_activations[idx])
+            else:
+                # Fallback: use mean activation
+                individual_acts.append(result.activations if result.activations.dim() == 1 else result.activations.mean(0))
+
+        # Mean of top-k activations
+        if individual_acts:
+            mean_act = torch.stack(individual_acts).mean(dim=0)
+        else:
+            mean_act = result.activations if result.activations.dim() == 1 else result.activations.mean(0)
+
+        return mean_act, indices, tokens, scores, individual_acts
+
+    except Exception as e:
+        print(f"      [WARN] Detailed capture failed: {e}, using fallback")
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        # Fallback: just get mean activation, no token details
+        mean_act = ao.capture_response_activations(prompt, response, layer=layer, positions="mean")
+        return mean_act, [], [], [], []
+
+
 def generate_with_steering(
     ao,  # ActivationOracleWrapper
     prompt: str,
