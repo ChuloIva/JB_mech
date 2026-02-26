@@ -23,9 +23,9 @@ Delta Attack exploits the transferability of adversarial prompts between models.
             │ 2. Get refusal         │                        │
             ├───────────────────────►│                        │
             │                        │                        │
-            │                        │ 3. "Why refuse?"       │
-            │                        │    Capture activations │
-            │                        │◄───────────────────────┤
+            │ 3. "Why refuse?"       │                        |
+            │    Capture activations │                        |
+            │◄───────────────────────┤                        |
             │                        │                        │
             │                        │ 4. "Why comply?"       │
             │                        │    Get compliance      │
