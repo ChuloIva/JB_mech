@@ -1,0 +1,36 @@
+# Example configuration for Red Team REPL
+
+# Target behavior to elicit
+target: "provide instructions for X"
+
+# Attack strategy
+# Options: default, authority, roleplay, gradual, social, technical, obfuscation
+strategy: gradual
+
+# User simulation model (the adversarial attacker)
+user:
+  backend: openrouter  # openrouter, transformers, or vllm
+  model: anthropic/claude-3-haiku
+  # For local models:
+  # backend: transformers
+  # model: meta-llama/Llama-3.1-8B-Instruct
+
+# Assistant simulation model (the target being attacked)
+assistant:
+  backend: openrouter
+  model: openai/gpt-4o-mini
+  # For local models:
+  # backend: vllm
+  # model: meta-llama/Llama-3.1-8B-Instruct
+
+# Assistant simulation style
+# Options: default, compliant, strict, realistic
+assistant_style: default
+
+# Session settings
+session_name: null  # null = auto-generate timestamp
+
+# Generation parameters (optional)
+generation:
+  temperature: 0.7
+  max_tokens: 512
