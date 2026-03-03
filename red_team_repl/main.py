@@ -4,6 +4,10 @@ Red Team REPL - Interactive conversation generator for adversarial testing.
 """
 import argparse
 import os
+from dotenv import load_dotenv
+
+# Load .env file from project root
+load_dotenv()
 import subprocess
 import tempfile
 from datetime import datetime

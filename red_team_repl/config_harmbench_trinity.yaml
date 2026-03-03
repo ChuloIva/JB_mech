@@ -1,0 +1,35 @@
+# HarmBench config using Trinity model from delta_attack
+# Trinity is used as the orchestrator (generates attacks + evaluates)
+
+# Target behavior (not used directly in benchmark mode - pulled from dataset)
+target: "from harmbench dataset"
+
+# Attack strategy
+strategy: gradual
+
+# User simulation model (the adversarial attacker)
+# Using Trinity as the user/attacker model
+user:
+  backend: openrouter
+  model: arcee-ai/trinity-large-preview:free
+
+# Assistant simulation model (the target being attacked)
+# This is the model we're trying to jailbreak
+assistant:
+  backend: openrouter
+  model: openai/gpt-4o-mini  # Change this to your target model
+
+# Assistant simulation style
+assistant_style: default
+
+# Orchestrator model (for evaluation and strategy in auto/benchmark mode)
+# Using Trinity here as well
+orchestrator_model: arcee-ai/trinity-large-preview:free
+
+# Session settings
+session_name: harmbench_trinity
+
+# Generation parameters
+generation:
+  temperature: 0.7
+  max_tokens: 512
