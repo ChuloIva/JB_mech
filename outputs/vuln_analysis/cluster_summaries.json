@@ -1,0 +1,542 @@
+{
+  "0": {
+    "size": 39,
+    "top_tags": [
+      "multimodal",
+      "vision",
+      "safety",
+      "jailbreak",
+      "blackbox"
+    ],
+    "example_titles": [
+      "Image Editing Visual Prompt Jailbreak",
+      "OCR Image Distraction Jailbreak",
+      "Progressive Attention LVLM Attack",
+      "Reward Hacking Via Adversarial Imitation",
+      "VLM Split-Image Blindspot"
+    ],
+    "label": "multimodal+vision+safety"
+  },
+  "1": {
+    "size": 32,
+    "top_tags": [
+      "multimodal",
+      "safety",
+      "jailbreak",
+      "blackbox",
+      "model-layer"
+    ],
+    "example_titles": [
+      "Cross-Image Contagion",
+      "Gamified Goal Pursuit Jailbreak",
+      "Multi-turn MLLM Jailbreak",
+      "Universal MLLM Target Matching",
+      "Dual Stego MLLM Jailbreak"
+    ],
+    "label": "multimodal+safety+jailbreak"
+  },
+  "2": {
+    "size": 13,
+    "top_tags": [
+      "jailbreak",
+      "multimodal",
+      "safety",
+      "model-layer",
+      "blackbox"
+    ],
+    "example_titles": [
+      "Voice Agent Behavioral Bypass",
+      "Audio Narrative Jailbreak",
+      "LAM Speech Style Jailbreak",
+      "Speech-Audio Composition Attack",
+      "Benign Audio Jailbreak"
+    ],
+    "label": "jailbreak+multimodal+safety"
+  },
+  "3": {
+    "size": 18,
+    "top_tags": [
+      "rag",
+      "blackbox",
+      "integrity",
+      "application-layer",
+      "poisoning"
+    ],
+    "example_titles": [
+      "RAG Knowledgebase Exfiltration",
+      "Zero-Training Cross-Domain Inversion",
+      "Nugget Overfitting Attack",
+      "Single Word Rank Promotion",
+      "RAG Poisoning Mitigation Downgrade"
+    ],
+    "label": "rag+blackbox+integrity"
+  },
+  "4": {
+    "size": 17,
+    "top_tags": [
+      "prompt-layer",
+      "jailbreak",
+      "safety",
+      "model-layer",
+      "blackbox"
+    ],
+    "example_titles": [
+      "CoT Trajectory Data Leak",
+      "Distractor Inverse Scaling",
+      "CoT Detector Obfuscation Bypass",
+      "Benign Reasoning Self-Jailbreaks LLMs",
+      "Self-Jailbreak Safety Override"
+    ],
+    "label": "prompt-layer+jailbreak+safety"
+  },
+  "5": {
+    "size": 5,
+    "top_tags": [
+      "blackbox",
+      "prompt-layer",
+      "model-layer",
+      "jailbreak",
+      "safety"
+    ],
+    "example_titles": [
+      "Knowledge-Graph Implicit Prompts",
+      "Black-Box Graph-Text Node Injection",
+      "Graph-LLM Template Injection",
+      "Graph-Based LLM Jailbreak",
+      "Semantic Intention Obfuscation"
+    ],
+    "label": "blackbox+prompt-layer+model-layer"
+  },
+  "6": {
+    "size": 5,
+    "top_tags": [
+      "model-layer",
+      "blackbox",
+      "integrity",
+      "safety",
+      "reliability"
+    ],
+    "example_titles": [
+      "LLM Watermark Translation Bypass",
+      "Back-Translation Watermark Stripping",
+      "Typos Undermine Watermarks",
+      "LLM Watermark Neutralization",
+      "Color-Aware Watermark Bypass"
+    ],
+    "label": "model-layer+blackbox+integrity"
+  },
+  "7": {
+    "size": 9,
+    "top_tags": [
+      "blackbox",
+      "integrity",
+      "injection",
+      "application-layer",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "LLM Review Paraphrase Attack",
+      "Paper Submission Prompt Injection",
+      "Breaking the LLM Reviewer",
+      "LLM Judge Subversion",
+      "Phantom Token User Deception"
+    ],
+    "label": "blackbox+integrity+injection"
+  },
+  "8": {
+    "size": 9,
+    "top_tags": [
+      "safety",
+      "jailbreak",
+      "blackbox",
+      "integrity",
+      "application-layer"
+    ],
+    "example_titles": [
+      "Dynamic Prompt Jailbreak",
+      "LLM-Tuned Image Jailbreak",
+      "Metaphor-Based T2I Jailbreak",
+      "Semantic Confusion Jailbreak",
+      "LLM-Driven Motion Adversarial Attack"
+    ],
+    "label": "safety+jailbreak+blackbox"
+  },
+  "9": {
+    "size": 8,
+    "top_tags": [
+      "model-layer",
+      "fine-tuning",
+      "data-security",
+      "safety",
+      "poisoning"
+    ],
+    "example_titles": [
+      "Aggressive Compression Model Theft",
+      "Quantization Contrastive Jailbreak",
+      "Logit Leakage Model Clone",
+      "Automated LLM Fingerprinting",
+      "SLM Quantization Direct Harms"
+    ],
+    "label": "model-layer+fine-tuning+data-security"
+  },
+  "10": {
+    "size": 7,
+    "top_tags": [
+      "jailbreak",
+      "safety",
+      "blackbox",
+      "integrity",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "EvoSynth: Evolutionary Attack Synthesis",
+      "Automated M2S Jailbreak Discovery",
+      "Camouflaged Jailbreak Prompts Benchmark",
+      "Automated Red-Teaming Achieves 100% ASR",
+      "Compositional Malware Generation"
+    ],
+    "label": "jailbreak+safety+blackbox"
+  },
+  "11": {
+    "size": 6,
+    "top_tags": [
+      "model-layer",
+      "jailbreak",
+      "safety",
+      "whitebox",
+      "reliability"
+    ],
+    "example_titles": [
+      "Safety Steering Amplifies Jailbreaks",
+      "LLM False Refusal Bias",
+      "LLM Censorship Vector Control",
+      "One-Shot LLM Steering Attack",
+      "Activation-Steering LLM Trojan"
+    ],
+    "label": "model-layer+jailbreak+safety"
+  },
+  "12": {
+    "size": 10,
+    "top_tags": [
+      "jailbreak",
+      "safety",
+      "prompt-layer",
+      "model-layer",
+      "whitebox"
+    ],
+    "example_titles": [
+      "Attention Breaks Concept Resistance",
+      "Causal Driver Jailbreak Enhancement",
+      "Emergent Character Misalignment",
+      "LLM Inconsistent Vulnerability Assessment",
+      "Sockpuppet Prefix Jailbreak"
+    ],
+    "label": "jailbreak+safety+prompt-layer"
+  },
+  "13": {
+    "size": 26,
+    "top_tags": [
+      "model-layer",
+      "fine-tuning",
+      "safety",
+      "jailbreak",
+      "poisoning"
+    ],
+    "example_titles": [
+      "Evolutionary Hidden Knowledge Recovery",
+      "LLM Backdoor Trigger Reconstruction",
+      "LLM Safety Geometry Fragility",
+      "LLM Input PII Leakage",
+      "STEP Manufacturing Corruption"
+    ],
+    "label": "model-layer+fine-tuning+safety"
+  },
+  "14": {
+    "size": 8,
+    "top_tags": [
+      "safety",
+      "model-layer",
+      "jailbreak",
+      "integrity",
+      "blackbox"
+    ],
+    "example_titles": [
+      "Dynamic Backtracking Failure",
+      "Learned Reward Model Hacking",
+      "LLM Psychological Jailbreak",
+      "Synergistic Bias Jailbreak",
+      "Generative Reward Hacking"
+    ],
+    "label": "safety+model-layer+jailbreak"
+  },
+  "15": {
+    "size": 22,
+    "top_tags": [
+      "model-layer",
+      "jailbreak",
+      "whitebox",
+      "safety",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "Covert Grade Manipulation",
+      "LLM Edit Fingerprint Leak",
+      "Noisy Data Pretraining Divergence",
+      "Token Position Jailbreak",
+      "Gradient-Free Transferable Jailbreak"
+    ],
+    "label": "model-layer+jailbreak+whitebox"
+  },
+  "16": {
+    "size": 65,
+    "top_tags": [
+      "agent",
+      "safety",
+      "application-layer",
+      "blackbox",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "Automated Stealth Skill Injection",
+      "Covert Agent Collusion",
+      "MCP Description-Code Inconsistency",
+      "Mobile Agent Visual Spoofing",
+      "Tag-Along Agent Jailbreak"
+    ],
+    "label": "agent+safety+application-layer"
+  },
+  "17": {
+    "size": 23,
+    "top_tags": [
+      "blackbox",
+      "jailbreak",
+      "safety",
+      "prompt-layer",
+      "integrity"
+    ],
+    "example_titles": [
+      "Word Puzzle Reasoning Jailbreak",
+      "Alphabet Index Jailbreak",
+      "Steganographic LLM Jailbreak",
+      "Benign-Prompt Jailbreak",
+      "Metaphor-Based LLM Jailbreak"
+    ],
+    "label": "blackbox+jailbreak+safety"
+  },
+  "18": {
+    "size": 6,
+    "top_tags": [
+      "prompt-layer",
+      "blackbox",
+      "integrity",
+      "injection",
+      "jailbreak"
+    ],
+    "example_titles": [
+      "Semantics-Preserving Detector Evasion",
+      "LLM Grading Compliance Paradox",
+      "Context-Shifting Code Injection",
+      "SMILES-Prompting LLM Jailbreak",
+      "Malicious Prompt Injection Attack"
+    ],
+    "label": "prompt-layer+blackbox+integrity"
+  },
+  "19": {
+    "size": 11,
+    "top_tags": [
+      "jailbreak",
+      "blackbox",
+      "safety",
+      "prompt-layer",
+      "injection"
+    ],
+    "example_titles": [
+      "Ciphered Prompt Self-Reconstruction Jailbreak",
+      "LLM App Malicious Drift",
+      "Controlled-Release Guard Bypass",
+      "RL-driven Formalized Prompt Jailbreaking",
+      "LLM Professional Vulnerable Code"
+    ],
+    "label": "jailbreak+blackbox+safety"
+  },
+  "20": {
+    "size": 6,
+    "top_tags": [
+      "prompt-layer",
+      "jailbreak",
+      "blackbox",
+      "safety",
+      "model-layer"
+    ],
+    "example_titles": [
+      "Intent-Context Coupling Jailbreak",
+      "Safe-to-Harm Response Rewrite",
+      "LLM Self-Harm Loop",
+      "Adaptive Traversal Jailbreak",
+      "JailFlip Implicit Harm"
+    ],
+    "label": "prompt-layer+jailbreak+blackbox"
+  },
+  "21": {
+    "size": 17,
+    "top_tags": [
+      "blackbox",
+      "prompt-layer",
+      "jailbreak",
+      "safety",
+      "integrity"
+    ],
+    "example_titles": [
+      "GPT Tool Misuse",
+      "LLM Factual MitM Injection",
+      "Multimodal Prompt Injection",
+      "Universal Prompt Disables Guardrails",
+      "Trojan Prompt Chains in Education"
+    ],
+    "label": "blackbox+prompt-layer+jailbreak"
+  },
+  "22": {
+    "size": 17,
+    "top_tags": [
+      "jailbreak",
+      "safety",
+      "blackbox",
+      "integrity",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "Embedded Templates Bypass Moderation",
+      "Template and Suffix Optimization",
+      "Hybrid LLM Jailbreak Strategy",
+      "CRI Jailbreak Initialization",
+      "Universal Jailbreak Injection"
+    ],
+    "label": "jailbreak+safety+blackbox"
+  },
+  "23": {
+    "size": 53,
+    "top_tags": [
+      "jailbreak",
+      "safety",
+      "blackbox",
+      "prompt-layer",
+      "integrity"
+    ],
+    "example_titles": [
+      "Adaptive Tool-Disguised Jailbreak",
+      "Chinese Pattern Safety Evasion",
+      "Direct Emoji Jailbreak",
+      "Plaintext Output Overflow",
+      "LLM Elder Fraud Pipeline"
+    ],
+    "label": "jailbreak+safety+blackbox"
+  },
+  "24": {
+    "size": 5,
+    "top_tags": [
+      "model-layer",
+      "prompt-layer",
+      "blackbox",
+      "safety",
+      "jailbreak"
+    ],
+    "example_titles": [
+      "Frontier Multi-Turn Jailbreak",
+      "Pervasive Multi-turn Jailbreaks",
+      "Reinforced Multi-turn Jailbreak",
+      "Underestimated LLM Security Flaws",
+      "Autonomous LLMs Jailbreak Models"
+    ],
+    "label": "model-layer+prompt-layer+blackbox"
+  },
+  "25": {
+    "size": 7,
+    "top_tags": [
+      "jailbreak",
+      "blackbox",
+      "safety",
+      "prompt-layer",
+      "integrity"
+    ],
+    "example_titles": [
+      "Activation-Guided Local Editing Jailbreak",
+      "Latent-Space Jailbreak Optimization",
+      "Dual Jailbreak via TDI/MTO",
+      "AP-Test Guardrail Identification",
+      "Prompt Translation Jailbreak"
+    ],
+    "label": "jailbreak+blackbox+safety"
+  },
+  "26": {
+    "size": 9,
+    "top_tags": [
+      "safety",
+      "jailbreak",
+      "blackbox",
+      "prompt-layer",
+      "integrity"
+    ],
+    "example_titles": [
+      "Guardrail Helpful Mode Jailbreak",
+      "Helpfulness-Oriented Jailbreak via Learning",
+      "LLM Guardrail Bypass",
+      "Intent Rephrasing Jailbreak",
+      "Genetic Scenario Shift Jailbreak"
+    ],
+    "label": "safety+jailbreak+blackbox"
+  },
+  "27": {
+    "size": 6,
+    "top_tags": [
+      "prompt-layer",
+      "blackbox",
+      "safety",
+      "integrity",
+      "jailbreak"
+    ],
+    "example_titles": [
+      "Variational Jailbreak Inference",
+      "ICL Permutation Exploit",
+      "Universal LLM Output Control",
+      "LLM Prompt Extraction",
+      "LLM Fake News Generation"
+    ],
+    "label": "prompt-layer+blackbox+safety"
+  },
+  "28": {
+    "size": 11,
+    "top_tags": [
+      "jailbreak",
+      "blackbox",
+      "safety",
+      "prompt-layer",
+      "integrity"
+    ],
+    "example_titles": [
+      "Progressive Exposure Jailbreak",
+      "Financial LLM Risk Concealment",
+      "Autonomous Multi-Turn LLM Jailbreak",
+      "Happy Ending LLM Jailbreak",
+      "Multi-Turn LLM Jailbreak"
+    ],
+    "label": "jailbreak+blackbox+safety"
+  },
+  "29": {
+    "size": 15,
+    "top_tags": [
+      "blackbox",
+      "safety",
+      "integrity",
+      "jailbreak",
+      "prompt-layer"
+    ],
+    "example_titles": [
+      "Clinical LLM Sycophancy",
+      "Metacognitive Prompting Lowers Resistance",
+      "Sophisticated Deception Induces Misbelief",
+      "Adversarial Self-Deception",
+      "LLM Confidence Deception"
+    ],
+    "label": "blackbox+safety+integrity"
+  }
+}

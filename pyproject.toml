@@ -28,6 +28,8 @@ dependencies = [
     "scipy",
     "pandas",
     "numpy",
+    "hdbscan",
+    "umap-learn",
 
     # Visualization
     "matplotlib",
