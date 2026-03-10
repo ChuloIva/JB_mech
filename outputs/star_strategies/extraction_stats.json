@@ -1,0 +1,32 @@
+{
+  "n_strategies": 100,
+  "mean_pairwise_distance": 0.4502071440219879,
+  "min_pairwise_distance": 0.12128299474716187,
+  "max_pairwise_distance": 0.8513028621673584,
+  "unique_tags": 23,
+  "tag_list": [
+    "agent",
+    "api",
+    "application-layer",
+    "blackbox",
+    "chain",
+    "data-privacy",
+    "data-security",
+    "denial-of-service",
+    "embedding",
+    "extraction",
+    "fine-tuning",
+    "hallucination",
+    "injection",
+    "integrity",
+    "jailbreak",
+    "model-layer",
+    "poisoning",
+    "prompt-layer",
+    "prompt-leaking",
+    "rag",
+    "reliability",
+    "safety",
+    "side-channel"
+  ]
+}

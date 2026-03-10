@@ -1,0 +1,779 @@
+{
+  "7bcb1563": {
+    "strategy_id": "7bcb1563",
+    "paper_url": "https://arxiv.org/abs/2502.01241",
+    "arxiv_id": "2502.01241",
+    "title": "Peering Behind the Shield: Guardrail Identification in Large Language Models",
+    "abstract": "Human-AI conversations have gained increasing attention since the era of large language models. Consequently, more techniques, such as input/output guardrails and safety alignment, are proposed to prevent potential misuse of such Human-AI conversations. However, the ability to identify these guardrails has significant implications, both for adversarial exploitation and for auditing purposes by red team operators. In this work, we propose a novel method, AP-Test, which identifies the presence of a candidate guardrail by leveraging guardrail-specific adversarial prompts to query the AI agent. Extensive experiments of four candidate guardrails under diverse scenarios showcase the effectiveness of our method. The ablation study further illustrates the importance of the components we designed, such as the loss terms.",
+    "authors": [
+      "Ziqing Yang",
+      "Yixin Wu",
+      "Rui Wen",
+      "Michael Backes",
+      "Yang Zhang"
+    ]
+  },
+  "9f744c48": {
+    "strategy_id": "9f744c48",
+    "paper_url": "https://arxiv.org/abs/2511.10519",
+    "arxiv_id": "2511.10519",
+    "title": "Say It Differently: Linguistic Styles as Jailbreak Vectors",
+    "abstract": "Large Language Models (LLMs) are commonly evaluated for robustness against paraphrased or semantically equivalent jailbreak prompts, yet little attention has been paid to linguistic variation as an attack surface. In this work, we systematically study how linguistic styles such as fear or curiosity can reframe harmful intent and elicit unsafe responses from aligned models. We construct style-augmented jailbreak benchmark by transforming prompts from 3 standard datasets into 11 distinct linguistic styles using handcrafted templates and LLM-based rewrites, while preserving semantic intent. Evaluating 16 open- and close-source instruction-tuned models, we find that stylistic reframing increases jailbreak success rates by up to +57 percentage points. Styles such as fearful, curious and compassionate are most effective and contextualized rewrites outperform templated variants.   To mitigate this, we introduce a style neutralization preprocessing step using a secondary LLM to strip manipulative stylistic cues from user inputs, significantly reducing jailbreak success rates. Our findings reveal a systemic and scaling-resistant vulnerability overlooked in current safety pipelines.",
+    "authors": [
+      "Srikant Panda",
+      "Avinash Rai"
+    ]
+  },
+  "7c02f3a1": {
+    "strategy_id": "7c02f3a1",
+    "paper_url": "https://arxiv.org/abs/2510.18728",
+    "arxiv_id": "2510.18728",
+    "title": "HarmNet: A Framework for Adaptive Multi-Turn Jailbreak Attacks on Large Language Models",
+    "abstract": "Large Language Models (LLMs) remain vulnerable to multi-turn jailbreak attacks. We introduce HarmNet, a modular framework comprising ThoughtNet, a hierarchical semantic network; a feedback-driven Simulator for iterative query refinement; and a Network Traverser for real-time adaptive attack execution. HarmNet systematically explores and refines the adversarial space to uncover stealthy, high-success attack paths. Experiments across closed-source and open-source LLMs show that HarmNet outperforms state-of-the-art methods, achieving higher attack success rates. For example, on Mistral-7B, HarmNet achieves a 99.4% attack success rate, 13.9% higher than the best baseline. Index terms: jailbreak attacks; large language models; adversarial framework; query refinement.",
+    "authors": [
+      "Sidhant Narula",
+      "Javad Rafiei Asl",
+      "Mohammad Ghasemigol",
+      "Eduardo Blanco",
+      "Daniel Takabi"
+    ]
+  },
+  "9ea81b2c": {
+    "strategy_id": "9ea81b2c",
+    "paper_url": "https://arxiv.org/abs/2411.06426",
+    "arxiv_id": "2411.06426",
+    "title": "SequentialBreak: Large Language Models Can be Fooled by Embedding Jailbreak Prompts into Sequential Prompt Chains",
+    "abstract": "As the integration of the Large Language Models (LLMs) into various applications increases, so does their susceptibility to misuse, raising significant security concerns. Numerous jailbreak attacks have been proposed to assess the security defense of LLMs. Current jailbreak attacks mainly rely on scenario camouflage, prompt obfuscation, prompt optimization, and prompt iterative optimization to conceal malicious prompts. In particular, sequential prompt chains in a single query can lead LLMs to focus on certain prompts while ignoring others, facilitating context manipulation. This paper introduces SequentialBreak, a novel jailbreak attack that exploits this vulnerability. We discuss several scenarios, not limited to examples like Question Bank, Dialog Completion, and Game Environment, where the harmful prompt is embedded within benign ones that can fool LLMs into generating harmful responses. The distinct narrative structures of these scenarios show that SequentialBreak is flexible enough to adapt to various prompt formats beyond those discussed. Extensive experiments demonstrate that SequentialBreak uses only a single query to achieve a substantial gain of attack success rate over existing baselines against both open-source and closed-source models. Through our research, we highlight the urgent need for more robust and resilient safeguards to enhance LLM security and prevent potential misuse. All the result files and website associated with this research are available in this GitHub repository: https://anonymous.4open.science/r/JailBreakAttack-4F3B/.",
+    "authors": [
+      "Bijoy Ahmed Saiem",
+      "MD Sadik Hossain Shanto",
+      "Rakib Ahsan",
+      "Md Rafi ur Rashid"
+    ]
+  },
+  "71c52faf": {
+    "strategy_id": "71c52faf",
+    "paper_url": "https://arxiv.org/abs/2508.06296",
+    "arxiv_id": "2508.06296",
+    "title": "LLM Robustness Leaderboard v1 --Technical report",
+    "abstract": "This technical report accompanies the LLM robustness leaderboard published by PRISM Eval for the Paris AI Action Summit. We introduce PRISM Eval Behavior Elicitation Tool (BET), an AI system performing automated red-teaming through Dynamic Adversarial Optimization that achieves 100% Attack Success Rate (ASR) against 37 of 41 state-of-the-art LLMs. Beyond binary success metrics, we propose a fine-grained robustness metric estimating the average number of attempts required to elicit harmful behaviors, revealing that attack difficulty varies by over 300-fold across models despite universal vulnerability. We introduce primitive-level vulnerability analysis to identify which jailbreaking techniques are most effective for specific hazard categories. Our collaborative evaluation with trusted third parties from the AI Safety Network demonstrates practical pathways for distributed robustness assessment across the community.",
+    "authors": [
+      "Pierre Peign\u00e9 - Lefebvre",
+      "Quentin Feuillade-Montixi",
+      "Tom David",
+      "Nicolas Miailhe"
+    ]
+  },
+  "5aafa2a2": {
+    "strategy_id": "5aafa2a2",
+    "paper_url": "https://arxiv.org/abs/2502.01633",
+    "arxiv_id": "2502.01633",
+    "title": "Adversarial Reasoning at Jailbreaking Time",
+    "abstract": "As large language models (LLMs) are becoming more capable and widespread, the study of their failure cases is becoming increasingly important. Recent advances in standardizing, measuring, and scaling test-time compute suggest new methodologies for optimizing models to achieve high performance on hard tasks. In this paper, we apply these advances to the task of model jailbreaking: eliciting harmful responses from aligned LLMs. We develop an adversarial reasoning approach to automatic jailbreaking that leverages a loss signal to guide the test-time compute, achieving SOTA attack success rates against many aligned LLMs, even those that aim to trade inference-time compute for adversarial robustness. Our approach introduces a new paradigm in understanding LLM vulnerabilities, laying the foundation for the development of more robust and trustworthy AI systems.",
+    "authors": [
+      "Mahdi Sabbaghi",
+      "Paul Kassianik",
+      "George Pappas",
+      "Yaron Singer",
+      "Amin Karbasi",
+      "Hamed Hassani"
+    ]
+  },
+  "282b5954": {
+    "strategy_id": "282b5954",
+    "paper_url": "https://arxiv.org/abs/2402.03299",
+    "arxiv_id": "2402.03299",
+    "title": "GUARD: Role-playing to Generate Natural-language Jailbreakings to Test Guideline Adherence of Large Language Models",
+    "abstract": "The discovery of \"jailbreaks\" to bypass safety filters of Large Language Models (LLMs) and harmful responses have encouraged the community to implement safety measures. One major safety measure is to proactively test the LLMs with jailbreaks prior to the release. Therefore, such testing will require a method that can generate jailbreaks massively and efficiently. In this paper, we follow a novel yet intuitive strategy to generate jailbreaks in the style of the human generation. We propose a role-playing system that assigns four different roles to the user LLMs to collaborate on new jailbreaks. Furthermore, we collect existing jailbreaks and split them into different independent characteristics using clustering frequency and semantic patterns sentence by sentence. We organize these characteristics into a knowledge graph, making them more accessible and easier to retrieve. Our system of different roles will leverage this knowledge graph to generate new jailbreaks, which have proved effective in inducing LLMs to generate unethical or guideline-violating responses. In addition, we also pioneer a setting in our system that will automatically follow the government-issued guidelines to generate jailbreaks to test whether LLMs follow the guidelines accordingly. We refer to our system as GUARD (Guideline Upholding through Adaptive Role-play Diagnostics). We have empirically validated the effectiveness of GUARD on three cutting-edge open-sourced LLMs (Vicuna-13B, LongChat-7B, and Llama-2-7B), as well as a widely-utilized commercial LLM (ChatGPT). Moreover, our work extends to the realm of vision language models (MiniGPT-v2 and Gemini Vision Pro), showcasing GUARD's versatility and contributing valuable insights for the development of safer, more reliable LLM-based applications across diverse modalities.",
+    "authors": [
+      "Haibo Jin",
+      "Ruoxi Chen",
+      "Peiyan Zhang",
+      "Andy Zhou",
+      "Haohan Wang"
+    ]
+  },
+  "fdd9fdd0": {
+    "strategy_id": "fdd9fdd0",
+    "paper_url": "https://arxiv.org/abs/2502.11853",
+    "arxiv_id": "2502.11853",
+    "title": "StructTransform: A Scalable Attack Surface for Safety-Aligned Large Language Models",
+    "abstract": "In this work, we present a series of structure transformation attacks on LLM alignment, where we encode natural language intent using diverse syntax spaces, ranging from simple structure formats and basic query languages (e.g., SQL) to new novel spaces and syntaxes created entirely by LLMs. Our extensive evaluation shows that our simplest attacks can achieve close to a 90% success rate, even on strict LLMs (such as Claude 3.5 Sonnet) using SOTA alignment mechanisms. We improve the attack performance further by using an adaptive scheme that combines structure transformations along with existing content transformations, resulting in over 96% ASR with 0% refusals.   To generalize our attacks, we explore numerous structure formats, including syntaxes purely generated by LLMs. Our results indicate that such novel syntaxes are easy to generate and result in a high ASR, suggesting that defending against our attacks is not a straightforward process. Finally, we develop a benchmark and evaluate existing safety-alignment defenses against it, showing that most of them fail with 100% ASR. Our results show that existing safety alignment mostly relies on token-level patterns without recognizing harmful concepts, highlighting and motivating the need for serious research efforts in this direction. As a case study, we demonstrate how attackers can use our attack to easily generate a sample malware and a corpus of fraudulent SMS messages, which perform well in bypassing detection.",
+    "authors": [
+      "Shehel Yoosuf",
+      "Temoor Ali",
+      "Ahmed Lekssays",
+      "Mashael AlSabah",
+      "Issa Khalil"
+    ]
+  },
+  "06c3a004": {
+    "strategy_id": "06c3a004",
+    "paper_url": "https://arxiv.org/abs/2602.06440",
+    "arxiv_id": "2602.06440",
+    "title": "TrailBlazer: History-Guided Reinforcement Learning for Black-Box LLM Jailbreaking",
+    "abstract": "Large Language Models (LLMs) have become integral to many domains, making their safety a critical priority. Prior jailbreaking research has explored diverse approaches, including prompt optimization, automated red teaming, obfuscation, and reinforcement learning (RL) based methods. However, most existing techniques fail to effectively leverage vulnerabilities revealed in earlier interaction turns, resulting in inefficient and unstable attacks. Since jailbreaking involves sequential interactions in which each response influences future actions, reinforcement learning provides a natural framework for this problem. Motivated by this, we propose a history-aware RL-based jailbreak framework that analyzes and reweights vulnerability signals from prior steps to guide future decisions. We show that incorporating historical information alone improves jailbreak success rates. Building on this insight, we introduce an attention-based reweighting mechanism that highlights critical vulnerabilities within the interaction history, enabling more efficient exploration with fewer queries. Extensive experiments on AdvBench and HarmBench demonstrate that our method achieves state-of-the-art jailbreak performance while significantly improving query efficiency. These results underscore the importance of historical vulnerability signals in reinforcement learning-driven jailbreak strategies and offer a principled pathway for advancing adversarial research on LLM safeguards.",
+    "authors": [
+      "Sung-Hoon Yoon",
+      "Ruizhi Qian",
+      "Minda Zhao",
+      "Weiyue Li",
+      "Mengyu Wang"
+    ]
+  },
+  "81ec4c39": {
+    "strategy_id": "81ec4c39",
+    "paper_url": "https://arxiv.org/abs/2502.01436",
+    "arxiv_id": "2502.01436",
+    "title": "Towards Safer Chatbots: Automated Policy Compliance Evaluation of Custom GPTs",
+    "abstract": "User-configured chatbots built on top of large language models are increasingly available through centralized marketplaces such as OpenAI's GPT Store. While these platforms enforce usage policies intended to prevent harmful or inappropriate behavior, the scale and opacity of customized chatbots make systematic policy enforcement challenging. As a result, policy-violating chatbots continue to remain publicly accessible despite existing review processes. This paper presents a fully automated method for evaluating the compliance of Custom GPTs with its marketplace usage policy using black-box interaction. The method combines large-scale GPT discovery, policy-driven red-teaming prompts, and automated compliance assessment using an LLM-as-a-judge. We focus on three policy-relevant domains explicitly addressed in OpenAI's usage policies: Romantic, Cybersecurity, and Academic GPTs. We validate our compliance assessment component against a human-annotated ground-truth dataset, achieving an F1 score of 0.975 for binary policy violation detection. We then apply the method in a large-scale empirical study of 782 Custom GPTs retrieved from the GPT Store. The results show that 58.7% of the evaluated GPTs exhibit at least one policy-violating response, with substantial variation across policy domains. A comparison with the base models (GPT-4 and GPT-4o) indicates that most violations originate from model-level behavior, while customization tends to amplify these tendencies rather than create new failure modes. Our findings reveal limitations in current review mechanisms for user-configured chatbots and demonstrate the feasibility of scalable, behavior-based policy compliance evaluation.",
+    "authors": [
+      "David Rodriguez",
+      "William Seymour",
+      "Jose M. Del Alamo",
+      "Jose Such"
+    ]
+  },
+  "82dce069": {
+    "strategy_id": "82dce069",
+    "paper_url": "https://arxiv.org/abs/2504.06577",
+    "arxiv_id": "2504.06577",
+    "title": "Bypassing Safety Guardrails in LLMs Using Humor",
+    "abstract": "In this paper, we show it is possible to bypass the safety guardrails of large language models (LLMs) through a humorous prompt including the unsafe request. In particular, our method does not edit the unsafe request and follows a fixed template -- it is simple to implement and does not need additional LLMs to craft prompts. Extensive experiments show the effectiveness of our method across different LLMs. We also show that both removing and adding more humor to our method can reduce its effectiveness -- excessive humor possibly distracts the LLM from fulfilling its unsafe request. Thus, we argue that LLM jailbreaking occurs when there is a proper balance between focus on the unsafe request and presence of humor.",
+    "authors": [
+      "Pedro Cisneros-Velarde"
+    ]
+  },
+  "e3ce24cd": {
+    "strategy_id": "e3ce24cd",
+    "paper_url": "https://arxiv.org/abs/2501.14073",
+    "arxiv_id": "2501.14073",
+    "title": "LLMs are Vulnerable to Malicious Prompts Disguised as Scientific Language",
+    "abstract": "As large language models (LLMs) have been deployed in various real-world settings, concerns about the harm they may propagate have grown. Various jailbreaking techniques have been developed to expose the vulnerabilities of these models and improve their safety. This work reveals that many state-of-the-art LLMs are vulnerable to malicious requests hidden behind scientific language. Specifically, our experiments with GPT4o, GPT4o-mini, GPT-4, LLama3-405B-Instruct, Llama3-70B-Instruct, Cohere, Gemini models demonstrate that, the models' biases and toxicity substantially increase when prompted with requests that deliberately misinterpret social science and psychological studies as evidence supporting the benefits of stereotypical biases. Alarmingly, these models can also be manipulated to generate fabricated scientific arguments claiming that biases are beneficial, which can be used by ill-intended actors to systematically jailbreak these strong LLMs. Our analysis studies various factors that contribute to the models' vulnerabilities to malicious requests in academic language. Mentioning author names and venues enhances the persuasiveness of models, and the bias scores increase as dialogues progress. Our findings call for a more careful investigation on the use of scientific data for training LLMs.",
+    "authors": [
+      "Yubin Ge",
+      "Neeraja Kirtane",
+      "Hao Peng",
+      "Dilek Hakkani-T\u00fcr"
+    ]
+  },
+  "5ff15b4d": {
+    "strategy_id": "5ff15b4d",
+    "paper_url": "https://arxiv.org/abs/2601.22569",
+    "arxiv_id": "2601.22569",
+    "title": "Whispers of Wealth: Red-Teaming Google's Agent Payments Protocol via Prompt Injection",
+    "abstract": "Large language model (LLM) based agents are increasingly used to automate financial transactions, yet their reliance on contextual reasoning exposes payment systems to prompt-driven manipulation. The Agent Payments Protocol (AP2) aims to secure agent-led purchases through cryptographically verifiable mandates, but its practical robustness remains underexplored. In this work, we perform an AI red-teaming evaluation of AP2 and identify vulnerabilities arising from indirect and direct prompt injection. We introduce two attack techniques, the Branded Whisper Attack and the Vault Whisper Attack which manipulate product ranking and extract sensitive user data. Using a functional AP2 based shopping agent built with Gemini-2.5-Flash and the Google ADK framework, we experimentally validate that simple adversarial prompts can reliably subvert agent behavior. Our findings reveal critical weaknesses in current agentic payment architectures and highlight the need for stronger isolation and defensive safeguards in LLM-mediated financial systems.",
+    "authors": [
+      "Tanusree Debi",
+      "Wentian Zhu"
+    ]
+  },
+  "abc865e7": {
+    "strategy_id": "abc865e7",
+    "paper_url": "https://arxiv.org/abs/2502.13527",
+    "arxiv_id": "2502.13527",
+    "title": "Exploiting Prefix-Tree in Structured Output Interfaces for Enhancing Jailbreak Attacking",
+    "abstract": "The rise of Large Language Models (LLMs) has led to significant applications but also introduced serious security threats, particularly from jailbreak attacks that manipulate output generation. These attacks utilize prompt engineering and logit manipulation to steer models toward harmful content, prompting LLM providers to implement filtering and safety alignment strategies. We investigate LLMs' safety mechanisms and their recent applications, revealing a new threat model targeting structured output interfaces, which enable attackers to manipulate the inner logit during LLM generation, requiring only API access permissions. To demonstrate this threat model, we introduce a black-box attack framework called AttackPrefixTree (APT). APT exploits structured output interfaces to dynamically construct attack patterns. By leveraging prefixes of models' safety refusal response and latent harmful outputs, APT effectively bypasses safety measures. Experiments on benchmark datasets indicate that this approach achieves higher attack success rate than existing methods. This work highlights the urgent need for LLM providers to enhance security protocols to address vulnerabilities arising from the interaction between safety patterns and structured outputs.",
+    "authors": [
+      "Yanzeng Li",
+      "Yunfan Xiong",
+      "Jialun Zhong",
+      "Jinchao Zhang",
+      "Jie Zhou",
+      "Lei Zou"
+    ]
+  },
+  "e0f4cfd6": {
+    "strategy_id": "e0f4cfd6",
+    "paper_url": "https://arxiv.org/abs/2402.11753",
+    "arxiv_id": "2402.11753",
+    "title": "ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs",
+    "abstract": "Safety is critical to the usage of large language models (LLMs). Multiple techniques such as data filtering and supervised fine-tuning have been developed to strengthen LLM safety. However, currently known techniques presume that corpora used for safety alignment of LLMs are solely interpreted by semantics. This assumption, however, does not hold in real-world applications, which leads to severe vulnerabilities in LLMs. For example, users of forums often use ASCII art, a form of text-based art, to convey image information. In this paper, we propose a novel ASCII art-based jailbreak attack and introduce a comprehensive benchmark Vision-in-Text Challenge (ViTC) to evaluate the capabilities of LLMs in recognizing prompts that cannot be solely interpreted by semantics. We show that five SOTA LLMs (GPT-3.5, GPT-4, Gemini, Claude, and Llama2) struggle to recognize prompts provided in the form of ASCII art. Based on this observation, we develop the jailbreak attack ArtPrompt, which leverages the poor performance of LLMs in recognizing ASCII art to bypass safety measures and elicit undesired behaviors from LLMs. ArtPrompt only requires black-box access to the victim LLMs, making it a practical attack. We evaluate ArtPrompt on five SOTA LLMs, and show that ArtPrompt can effectively and efficiently induce undesired behaviors from all five LLMs. Our code is available at https://github.com/uw-nsl/ArtPrompt.",
+    "authors": [
+      "Fengqing Jiang",
+      "Zhangchen Xu",
+      "Luyao Niu",
+      "Zhen Xiang",
+      "Bhaskar Ramasubramanian",
+      "Bo Li",
+      "Radha Poovendran"
+    ]
+  },
+  "cd454ae4": {
+    "strategy_id": "cd454ae4",
+    "paper_url": "https://arxiv.org/abs/2311.08268",
+    "arxiv_id": "2311.08268",
+    "title": "A Wolf in Sheep's Clothing: Generalized Nested Jailbreak Prompts can Fool Large Language Models Easily",
+    "abstract": "Large Language Models (LLMs), such as ChatGPT and GPT-4, are designed to provide useful and safe responses. However, adversarial prompts known as 'jailbreaks' can circumvent safeguards, leading LLMs to generate potentially harmful content. Exploring jailbreak prompts can help to better reveal the weaknesses of LLMs and further steer us to secure them. Unfortunately, existing jailbreak methods either suffer from intricate manual design or require optimization on other white-box models, which compromises either generalization or efficiency. In this paper, we generalize jailbreak prompt attacks into two aspects: (1) Prompt Rewriting and (2) Scenario Nesting. Based on this, we propose ReNeLLM, an automatic framework that leverages LLMs themselves to generate effective jailbreak prompts. Extensive experiments demonstrate that ReNeLLM significantly improves the attack success rate while greatly reducing the time cost compared to existing baselines. Our study also reveals the inadequacy of current defense methods in safeguarding LLMs. Finally, we analyze the failure of LLMs defense from the perspective of prompt execution priority, and propose corresponding defense strategies. We hope that our research can catalyze both the academic community and LLMs developers towards the provision of safer and more regulated LLMs. The code is available at https://github.com/NJUNLP/ReNeLLM.",
+    "authors": [
+      "Peng Ding",
+      "Jun Kuang",
+      "Dan Ma",
+      "Xuezhi Cao",
+      "Yunsen Xian",
+      "Jiajun Chen",
+      "Shujian Huang"
+    ]
+  },
+  "7a2aaaf6": {
+    "strategy_id": "7a2aaaf6",
+    "paper_url": "https://arxiv.org/abs/2501.14250",
+    "arxiv_id": "2501.14250",
+    "title": "Siren: A Learning-Based Multi-Turn Attack Framework for Simulating Real-World Human Jailbreak Behaviors",
+    "abstract": "Large language models (LLMs) are widely used in real-world applications, raising concerns about their safety and trustworthiness. While red-teaming with jailbreak prompts exposes the vulnerabilities of LLMs, current efforts focus primarily on single-turn attacks, overlooking the multi-turn strategies used by real-world adversaries. Existing multi-turn methods rely on static patterns or predefined logical chains, failing to account for the dynamic strategies during attacks. We propose Siren, a learning-based multi-turn attack framework designed to simulate real-world human jailbreak behaviors. Siren consists of three stages: (1) MiniMax-driven training set construction utilizing Turn-Level LLM feedback, (2) post-training attackers with supervised fine-tuning (SFT) and direct preference optimization (DPO), and (3) interactions between the attacking and target LLMs. Experiments demonstrate that Siren achieves an attack success rate (ASR) of 90% with LLaMA-3-8B as the attacker against Gemini-1.5-Pro as the target model, and 70% with Mistral-7B against GPT-4o, significantly outperforming single-turn baselines. Moreover, Siren with a 7B-scale model achieves performance comparable to a multi-turn baseline that leverages GPT-4o as the attacker, while requiring fewer turns and employing decomposition strategies that are better semantically aligned with attack goals. We hope Siren inspires the development of stronger defenses against advanced multi-turn jailbreak attacks under realistic scenarios. Code is available at https://github.com/YiyiyiZhao/siren. Warning: This paper contains potentially harmful text.",
+    "authors": [
+      "Yi Zhao",
+      "Youzhi Zhang"
+    ]
+  },
+  "39225acc": {
+    "strategy_id": "39225acc",
+    "paper_url": "https://arxiv.org/abs/2502.08586",
+    "arxiv_id": "2502.08586",
+    "title": "Commercial LLM Agents Are Already Vulnerable to Simple Yet Dangerous Attacks",
+    "abstract": "A high volume of recent ML security literature focuses on attacks against aligned large language models (LLMs). These attacks may extract private information or coerce the model into producing harmful outputs. In real-world deployments, LLMs are often part of a larger agentic pipeline including memory systems, retrieval, web access, and API calling. Such additional components introduce vulnerabilities that make these LLM-powered agents much easier to attack than isolated LLMs, yet relatively little work focuses on the security of LLM agents. In this paper, we analyze security and privacy vulnerabilities that are unique to LLM agents. We first provide a taxonomy of attacks categorized by threat actors, objectives, entry points, attacker observability, attack strategies, and inherent vulnerabilities of agent pipelines. We then conduct a series of illustrative attacks on popular open-source and commercial agents, demonstrating the immediate practical implications of their vulnerabilities. Notably, our attacks are trivial to implement and require no understanding of machine learning.",
+    "authors": [
+      "Ang Li",
+      "Yin Zhou",
+      "Vethavikashini Chithrra Raghuram",
+      "Tom Goldstein",
+      "Micah Goldblum"
+    ]
+  },
+  "b0f3784c": {
+    "strategy_id": "b0f3784c",
+    "paper_url": "https://arxiv.org/abs/2502.19820",
+    "arxiv_id": "2502.19820",
+    "title": "Foot-In-The-Door: A Multi-turn Jailbreak for LLMs",
+    "abstract": "Ensuring AI safety is crucial as large language models become increasingly integrated into real-world applications. A key challenge is jailbreak, where adversarial prompts bypass built-in safeguards to elicit harmful disallowed outputs. Inspired by psychological foot-in-the-door principles, we introduce FITD,a novel multi-turn jailbreak method that leverages the phenomenon where minor initial commitments lower resistance to more significant or more unethical transgressions. Our approach progressively escalates the malicious intent of user queries through intermediate bridge prompts and aligns the model's response by itself to induce toxic responses. Extensive experimental results on two jailbreak benchmarks demonstrate that FITD achieves an average attack success rate of 94% across seven widely used models, outperforming existing state-of-the-art methods. Additionally, we provide an in-depth analysis of LLM self-corruption, highlighting vulnerabilities in current alignment strategies and emphasizing the risks inherent in multi-turn interactions. The code is available at https://github.com/Jinxiaolong1129/Foot-in-the-door-Jailbreak.",
+    "authors": [
+      "Zixuan Weng",
+      "Xiaolong Jin",
+      "Jinyuan Jia",
+      "Xiangyu Zhang"
+    ]
+  },
+  "entry_263": {
+    "strategy_id": "entry_263",
+    "paper_url": "https://arxiv.org/abs/2511.07480",
+    "arxiv_id": "2511.07480",
+    "title": "KG-DF: A Black-box Defense Framework against Jailbreak Attacks Based on Knowledge Graphs",
+    "abstract": "With the widespread application of large language models (LLMs) in various fields, the security challenges they face have become increasingly prominent, especially the issue of jailbreak. These attacks induce the model to generate erroneous or uncontrolled outputs through crafted inputs, threatening the generality and security of the model. Although existing defense methods have shown some effectiveness, they often struggle to strike a balance between model generality and security. Excessive defense may limit the normal use of the model, while insufficient defense may lead to security vulnerabilities. In response to this problem, we propose a Knowledge Graph Defense Framework (KG-DF). Specifically, because of its structured knowledge representation and semantic association capabilities, Knowledge Graph(KG) can be searched by associating input content with safe knowledge in the knowledge base, thus identifying potentially harmful intentions and providing safe reasoning paths. However, traditional KG methods encounter significant challenges in keyword extraction, particularly when confronted with diverse and evolving attack strategies. To address this issue, we introduce an extensible semantic parsing module, whose core task is to transform the input query into a set of structured and secure concept representations, thereby enhancing the relevance of the matching process. Experimental results show that our framework enhances defense performance against various jailbreak attack methods, while also improving the response quality of the LLM in general QA scenarios by incorporating domain-general knowledge.",
+    "authors": [
+      "Shuyuan Liu",
+      "Jiawei Chen",
+      "Xiao Yang",
+      "Hang Su",
+      "Zhaoxia Yin"
+    ]
+  },
+  "0221d96f": {
+    "strategy_id": "0221d96f",
+    "paper_url": "https://arxiv.org/abs/2311.09127",
+    "arxiv_id": "2311.09127",
+    "error": "fetch_failed"
+  },
+  "71f48516": {
+    "strategy_id": "71f48516",
+    "paper_url": "https://arxiv.org/abs/2512.19016",
+    "arxiv_id": "2512.19016",
+    "error": "fetch_failed"
+  },
+  "cb48e001": {
+    "strategy_id": "cb48e001",
+    "paper_url": "https://arxiv.org/abs/2408.11313",
+    "arxiv_id": "2408.11313",
+    "error": "fetch_failed"
+  },
+  "20b5106f": {
+    "strategy_id": "20b5106f",
+    "paper_url": "https://arxiv.org/abs/2511.18790",
+    "arxiv_id": "2511.18790",
+    "error": "fetch_failed"
+  },
+  "c87f9f81": {
+    "strategy_id": "c87f9f81",
+    "paper_url": "https://arxiv.org/abs/2512.13703",
+    "arxiv_id": "2512.13703",
+    "error": "fetch_failed"
+  },
+  "3d79a776": {
+    "strategy_id": "3d79a776",
+    "paper_url": "https://arxiv.org/abs/2408.13896",
+    "arxiv_id": "2408.13896",
+    "error": "fetch_failed"
+  },
+  "9cba65a7": {
+    "strategy_id": "9cba65a7",
+    "paper_url": "https://arxiv.org/abs/2601.05755",
+    "arxiv_id": "2601.05755",
+    "error": "fetch_failed"
+  },
+  "cdc38195": {
+    "strategy_id": "cdc38195",
+    "paper_url": "https://arxiv.org/abs/2412.15623",
+    "arxiv_id": "2412.15623",
+    "error": "fetch_failed"
+  },
+  "70915d93": {
+    "strategy_id": "70915d93",
+    "paper_url": "https://arxiv.org/abs/2509.17938",
+    "arxiv_id": "2509.17938",
+    "error": "fetch_failed"
+  },
+  "06a8ea85": {
+    "strategy_id": "06a8ea85",
+    "paper_url": "https://arxiv.org/abs/2402.10601",
+    "arxiv_id": "2402.10601",
+    "error": "fetch_failed"
+  },
+  "4211c4e4": {
+    "strategy_id": "4211c4e4",
+    "paper_url": "https://arxiv.org/abs/2512.00136",
+    "arxiv_id": "2512.00136",
+    "title": "An Empirical Study on the Security Vulnerabilities of GPTs",
+    "abstract": "Equipped with various tools and knowledge, GPTs, one kind of customized AI agents based on OpenAI's large language models, have illustrated great potential in many fields, such as writing, research, and programming. Today, the number of GPTs has reached three millions, with the range of specific expert domains becoming increasingly diverse. However, given the consistent framework shared among these LLM agent applications, systemic security vulnerabilities may exist and remain underexplored. To fill this gap, we present an empirical study on the security vulnerabilities of GPTs. Building upon prior research on LLM security, we first adopt a platform-user perspective to conduct a comprehensive attack surface analysis across different system components. Then, we design a systematic and multidimensional attack suite with the explicit objectives of information leakage and tool misuse based on the attack surface analysis, thereby concretely demonstrating the security vulnerabilities that various components of GPT-based systems face. Finally, we accordingly propose defense mechanisms to address the aforementioned security vulnerabilities. By increasing the awareness of these vulnerabilities and offering critical insights into their implications, this study seeks to facilitate the secure and responsible application of GPTs while contributing to developing robust defense mechanisms that protect users and systems against malicious attacks.",
+    "authors": [
+      "Tong Wu",
+      "Weibin Wu",
+      "Zibin Zheng"
+    ]
+  },
+  "c905220b": {
+    "strategy_id": "c905220b",
+    "paper_url": "https://arxiv.org/abs/2502.18504",
+    "arxiv_id": "2502.18504",
+    "error": "fetch_failed"
+  },
+  "525f139c": {
+    "strategy_id": "525f139c",
+    "paper_url": "https://arxiv.org/abs/2401.06373",
+    "arxiv_id": "2401.06373",
+    "error": "fetch_failed"
+  },
+  "082f5d49": {
+    "strategy_id": "082f5d49",
+    "paper_url": "https://arxiv.org/abs/2311.09948",
+    "arxiv_id": "2311.09948",
+    "error": "fetch_failed"
+  },
+  "2cec4f9d": {
+    "strategy_id": "2cec4f9d",
+    "paper_url": "https://arxiv.org/abs/2404.04849",
+    "arxiv_id": "2404.04849",
+    "error": "fetch_failed"
+  },
+  "dd564117": {
+    "strategy_id": "dd564117",
+    "paper_url": "https://arxiv.org/abs/2409.07503",
+    "arxiv_id": "2409.07503",
+    "error": "fetch_failed"
+  },
+  "f44cc820": {
+    "strategy_id": "f44cc820",
+    "paper_url": "https://arxiv.org/abs/2505.12287",
+    "arxiv_id": "2505.12287",
+    "error": "fetch_failed"
+  },
+  "862fb16b": {
+    "strategy_id": "862fb16b",
+    "paper_url": "https://arxiv.org/abs/2501.18626",
+    "arxiv_id": "2501.18626",
+    "error": "fetch_failed"
+  },
+  "1a4b312b": {
+    "strategy_id": "1a4b312b",
+    "paper_url": "https://arxiv.org/abs/2602.14211",
+    "arxiv_id": "2602.14211",
+    "title": "SkillJect: Automating Stealthy Skill-Based Prompt Injection for Coding Agents with Trace-Driven Closed-Loop Refinement",
+    "abstract": "Agent skills are becoming a core abstraction in coding agents, packaging long-form instructions and auxiliary scripts to extend tool-augmented behaviors. This abstraction introduces an under-measured attack surface: skill-based prompt injection, where poisoned skills can steer agents away from user intent and safety policies. In practice, naive injections often fail because the malicious intent is too explicit or drifts too far from the original skill, leading agents to ignore or refuse them; existing attacks are also largely hand-crafted. We propose the first automated framework for stealthy prompt injection tailored to agent skills. The framework forms a closed loop with three agents: an Attack Agent that synthesizes injection skills under explicit stealth constraints, a Code Agent that executes tasks using the injected skills in a realistic tool environment, and an Evaluate Agent that logs action traces (e.g., tool calls and file operations) and verifies whether targeted malicious behaviors occurred. We also propose a malicious payload hiding strategy that conceals adversarial operations in auxiliary scripts while injecting optimized inducement prompts to trigger tool execution. Extensive experiments across diverse coding-agent settings and real-world software engineering tasks show that our method consistently achieves high attack success rates under realistic settings.",
+    "authors": [
+      "Xiaojun Jia",
+      "Jie Liao",
+      "Simeng Qin",
+      "Jindong Gu",
+      "Wenqi Ren",
+      "Xiaochun Cao",
+      "Yang Liu",
+      "Philip Torr"
+    ]
+  },
+  "317fdc10": {
+    "strategy_id": "317fdc10",
+    "paper_url": "https://arxiv.org/abs/2507.10054",
+    "arxiv_id": "2507.10054",
+    "error": "fetch_failed"
+  },
+  "20187f8e": {
+    "strategy_id": "20187f8e",
+    "paper_url": "https://arxiv.org/abs/2505.14103",
+    "arxiv_id": "2505.14103",
+    "error": "fetch_failed"
+  },
+  "ba0ece35": {
+    "strategy_id": "ba0ece35",
+    "paper_url": "https://arxiv.org/abs/2501.07959",
+    "arxiv_id": "2501.07959",
+    "error": "fetch_failed"
+  },
+  "f6ac162c": {
+    "strategy_id": "f6ac162c",
+    "paper_url": "https://arxiv.org/abs/2601.04740",
+    "arxiv_id": "2601.04740",
+    "error": "fetch_failed"
+  },
+  "cb0a7769": {
+    "strategy_id": "cb0a7769",
+    "paper_url": "https://arxiv.org/abs/2602.05746",
+    "arxiv_id": "2602.05746",
+    "error": "fetch_failed"
+  },
+  "cb0858f6": {
+    "strategy_id": "cb0858f6",
+    "paper_url": "https://arxiv.org/abs/2601.00240",
+    "arxiv_id": "2601.00240",
+    "error": "fetch_failed"
+  },
+  "e820b15f": {
+    "strategy_id": "e820b15f",
+    "paper_url": "https://arxiv.org/abs/2407.03232",
+    "arxiv_id": "2407.03232",
+    "error": "fetch_failed"
+  },
+  "e7a0ed50": {
+    "strategy_id": "e7a0ed50",
+    "paper_url": "https://arxiv.org/abs/2310.10077",
+    "arxiv_id": "2310.10077",
+    "error": "fetch_failed"
+  },
+  "b431062b": {
+    "strategy_id": "b431062b",
+    "paper_url": "https://arxiv.org/abs/2410.05295",
+    "arxiv_id": "2410.05295",
+    "error": "fetch_failed"
+  },
+  "80534e4c": {
+    "strategy_id": "80534e4c",
+    "paper_url": "https://arxiv.org/abs/2509.05372",
+    "arxiv_id": "2509.05372",
+    "error": "fetch_failed"
+  },
+  "47025a0b": {
+    "strategy_id": "47025a0b",
+    "paper_url": "https://arxiv.org/abs/2509.17259",
+    "arxiv_id": "2509.17259",
+    "error": "fetch_failed"
+  },
+  "71bfa851": {
+    "strategy_id": "71bfa851",
+    "paper_url": "https://arxiv.org/abs/2510.12993",
+    "arxiv_id": "2510.12993",
+    "error": "fetch_failed"
+  },
+  "16f16d3f": {
+    "strategy_id": "16f16d3f",
+    "paper_url": "https://arxiv.org/abs/2507.11097",
+    "arxiv_id": "2507.11097",
+    "error": "fetch_failed"
+  },
+  "d38a5615": {
+    "strategy_id": "d38a5615",
+    "paper_url": "https://arxiv.org/abs/2412.06788",
+    "arxiv_id": "2412.06788",
+    "error": "fetch_failed"
+  },
+  "233a0d8e": {
+    "strategy_id": "233a0d8e",
+    "paper_url": "https://arxiv.org/abs/2601.00936",
+    "arxiv_id": "2601.00936",
+    "error": "fetch_failed"
+  },
+  "61a91449": {
+    "strategy_id": "61a91449",
+    "paper_url": "https://arxiv.org/abs/2310.12505",
+    "arxiv_id": "2310.12505",
+    "error": "fetch_failed"
+  },
+  "80e9e734": {
+    "strategy_id": "80e9e734",
+    "paper_url": "https://arxiv.org/abs/2404.01833",
+    "arxiv_id": "2404.01833",
+    "error": "fetch_failed"
+  },
+  "df17adef": {
+    "strategy_id": "df17adef",
+    "paper_url": "https://arxiv.org/abs/2405.19668",
+    "arxiv_id": "2405.19668",
+    "error": "fetch_failed"
+  },
+  "f46f8db3": {
+    "strategy_id": "f46f8db3",
+    "paper_url": "https://arxiv.org/abs/2312.10524",
+    "arxiv_id": "2312.10524",
+    "error": "fetch_failed"
+  },
+  "8597cc8c": {
+    "strategy_id": "8597cc8c",
+    "paper_url": "https://arxiv.org/abs/2411.02785",
+    "arxiv_id": "2411.02785",
+    "error": "fetch_failed"
+  },
+  "a23bd199": {
+    "strategy_id": "a23bd199",
+    "paper_url": "https://arxiv.org/abs/2602.06248",
+    "arxiv_id": "2602.06248",
+    "error": "fetch_failed"
+  },
+  "9bcb836e": {
+    "strategy_id": "9bcb836e",
+    "paper_url": "https://arxiv.org/abs/2505.16241",
+    "arxiv_id": "2505.16241",
+    "error": "fetch_failed"
+  },
+  "e4388372": {
+    "strategy_id": "e4388372",
+    "paper_url": "https://arxiv.org/abs/2601.03420",
+    "arxiv_id": "2601.03420",
+    "error": "fetch_failed"
+  },
+  "760b7150": {
+    "strategy_id": "760b7150",
+    "paper_url": "https://arxiv.org/abs/2507.14207",
+    "arxiv_id": "2507.14207",
+    "error": "fetch_failed"
+  },
+  "6c6b5852": {
+    "strategy_id": "6c6b5852",
+    "paper_url": "https://arxiv.org/abs/2504.13203",
+    "arxiv_id": "2504.13203",
+    "error": "fetch_failed"
+  },
+  "2849ae7d": {
+    "strategy_id": "2849ae7d",
+    "paper_url": "https://arxiv.org/abs/2509.09912",
+    "arxiv_id": "2509.09912",
+    "error": "fetch_failed"
+  },
+  "2dd2a104": {
+    "strategy_id": "2dd2a104",
+    "paper_url": "https://arxiv.org/abs/2407.01902",
+    "arxiv_id": "2407.01902",
+    "error": "fetch_failed"
+  },
+  "560ed069": {
+    "strategy_id": "560ed069",
+    "paper_url": "https://arxiv.org/abs/2509.14297",
+    "arxiv_id": "2509.14297",
+    "error": "fetch_failed"
+  },
+  "acb06b8c": {
+    "strategy_id": "acb06b8c",
+    "paper_url": "https://arxiv.org/abs/2601.13590",
+    "arxiv_id": "2601.13590",
+    "error": "fetch_failed"
+  },
+  "a629d220": {
+    "strategy_id": "a629d220",
+    "paper_url": "https://arxiv.org/abs/2502.00406",
+    "arxiv_id": "2502.00406",
+    "error": "fetch_failed"
+  },
+  "b172588d": {
+    "strategy_id": "b172588d",
+    "paper_url": "https://arxiv.org/abs/2503.08990",
+    "arxiv_id": "2503.08990",
+    "error": "fetch_failed"
+  },
+  "040b115d": {
+    "strategy_id": "040b115d",
+    "paper_url": "https://arxiv.org/abs/2406.12935",
+    "arxiv_id": "2406.12935",
+    "error": "fetch_failed"
+  },
+  "7070c17a": {
+    "strategy_id": "7070c17a",
+    "paper_url": "https://arxiv.org/abs/2501.13115",
+    "arxiv_id": "2501.13115",
+    "error": "fetch_failed"
+  },
+  "a4883e11": {
+    "strategy_id": "a4883e11",
+    "paper_url": "https://arxiv.org/abs/2507.05248",
+    "arxiv_id": "2507.05248",
+    "error": "fetch_failed"
+  },
+  "525dd110": {
+    "strategy_id": "525dd110",
+    "paper_url": "https://arxiv.org/abs/2406.08725",
+    "arxiv_id": "2406.08725",
+    "error": "fetch_failed"
+  },
+  "df5dcc48": {
+    "strategy_id": "df5dcc48",
+    "paper_url": "https://arxiv.org/abs/2507.02990",
+    "arxiv_id": "2507.02990",
+    "error": "fetch_failed"
+  },
+  "9127d01f": {
+    "strategy_id": "9127d01f",
+    "paper_url": "https://arxiv.org/abs/2412.12621",
+    "arxiv_id": "2412.12621",
+    "error": "fetch_failed"
+  },
+  "f717d658": {
+    "strategy_id": "f717d658",
+    "paper_url": "https://arxiv.org/abs/2601.07084",
+    "arxiv_id": "2601.07084",
+    "error": "fetch_failed"
+  },
+  "b7dfac71": {
+    "strategy_id": "b7dfac71",
+    "paper_url": "https://arxiv.org/abs/2507.22564",
+    "arxiv_id": "2507.22564",
+    "error": "fetch_failed"
+  },
+  "c2549891": {
+    "strategy_id": "c2549891",
+    "paper_url": "https://arxiv.org/abs/2505.18556",
+    "arxiv_id": "2505.18556",
+    "error": "fetch_failed"
+  },
+  "e5334c3a": {
+    "strategy_id": "e5334c3a",
+    "paper_url": "https://arxiv.org/abs/2509.05367",
+    "arxiv_id": "2509.05367",
+    "error": "fetch_failed"
+  },
+  "cf3fa770": {
+    "strategy_id": "cf3fa770",
+    "paper_url": "https://arxiv.org/abs/2601.19051",
+    "arxiv_id": "2601.19051",
+    "error": "fetch_failed"
+  },
+  "0e96c4d8": {
+    "strategy_id": "0e96c4d8",
+    "paper_url": "https://arxiv.org/abs/2410.15641",
+    "arxiv_id": "2410.15641",
+    "error": "fetch_failed"
+  },
+  "4711febd": {
+    "strategy_id": "4711febd",
+    "paper_url": "https://arxiv.org/abs/2502.11054",
+    "arxiv_id": "2502.11054",
+    "error": "fetch_failed"
+  },
+  "5882db3a": {
+    "strategy_id": "5882db3a",
+    "paper_url": "https://arxiv.org/abs/2410.01294",
+    "arxiv_id": "2410.01294",
+    "error": "fetch_failed"
+  },
+  "13c741bf": {
+    "strategy_id": "13c741bf",
+    "paper_url": "https://arxiv.org/abs/2511.03247",
+    "arxiv_id": "2511.03247",
+    "error": "fetch_failed"
+  },
+  "a82214a7": {
+    "strategy_id": "a82214a7",
+    "paper_url": "https://arxiv.org/abs/2601.08668",
+    "arxiv_id": "2601.08668",
+    "error": "fetch_failed"
+  },
+  "ba53082b": {
+    "strategy_id": "ba53082b",
+    "paper_url": "https://arxiv.org/abs/2505.23404",
+    "arxiv_id": "2505.23404",
+    "error": "fetch_failed"
+  },
+  "f9191be6": {
+    "strategy_id": "f9191be6",
+    "paper_url": "https://arxiv.org/abs/2412.15289",
+    "arxiv_id": "2412.15289",
+    "error": "fetch_failed"
+  },
+  "0fe07ce3": {
+    "strategy_id": "0fe07ce3",
+    "paper_url": "https://arxiv.org/abs/2508.04039",
+    "arxiv_id": "2508.04039",
+    "error": "fetch_failed"
+  },
+  "f90822cf": {
+    "strategy_id": "f90822cf",
+    "paper_url": "https://arxiv.org/abs/2512.21250",
+    "arxiv_id": "2512.21250",
+    "error": "fetch_failed"
+  },
+  "c58f5cc0": {
+    "strategy_id": "c58f5cc0",
+    "paper_url": "https://arxiv.org/abs/2601.09321",
+    "arxiv_id": "2601.09321",
+    "title": "SpatialJB: How Text Distribution Art Becomes the \"Jailbreak Key\" for LLM Guardrails",
+    "abstract": "While Large Language Models (LLMs) have powerful capabilities, they remain vulnerable to jailbreak attacks, which is a critical barrier to their safe web real-time application. Current commercial LLM providers deploy output guardrails to filter harmful outputs, yet these defenses are not impenetrable. Due to LLMs' reliance on autoregressive, token-by-token inference, their semantic representations lack robustness to spatially structured perturbations, such as redistributing tokens across different rows, columns, or diagonals. Exploiting the Transformer's spatial weakness, we propose SpatialJB to disrupt the model's output generation process, allowing harmful content to bypass guardrails without detection. Comprehensive experiments conducted on leading LLMs get nearly 100% ASR, demonstrating the high effectiveness of SpatialJB. Even after adding advanced output guardrails, like the OpenAI Moderation API, SpatialJB consistently maintains a success rate exceeding 75%, outperforming current jailbreak techniques by a significant margin. The proposal of SpatialJB exposes a key weakness in current guardrails and emphasizes the importance of spatial semantics, offering new insights to advance LLM safety research. To prevent potential misuse, we also present baseline defense strategies against SpatialJB and evaluate their effectiveness in mitigating such attacks. The code for the attack, baseline defenses, and a demo are available at https://anonymous.4open.science/r/SpatialJailbreak-8E63.",
+    "authors": [
+      "Zhiyi Mou",
+      "Jingyuan Yang",
+      "Zeheng Qian",
+      "Wangze Ni",
+      "Tianfang Xiao",
+      "Ning Liu",
+      "Chen Zhang",
+      "Zhan Qin",
+      "Kui Ren"
+    ]
+  },
+  "ff0f7ccd": {
+    "strategy_id": "ff0f7ccd",
+    "paper_url": "https://arxiv.org/abs/2503.01839",
+    "arxiv_id": "2503.01839",
+    "error": "fetch_failed"
+  },
+  "e5612437": {
+    "strategy_id": "e5612437",
+    "paper_url": "https://arxiv.org/abs/2402.09177",
+    "arxiv_id": "2402.09177",
+    "error": "fetch_failed"
+  },
+  "79c098b6": {
+    "strategy_id": "79c098b6",
+    "paper_url": "https://arxiv.org/abs/2409.03131",
+    "arxiv_id": "2409.03131",
+    "error": "fetch_failed"
+  },
+  "4c1502d7": {
+    "strategy_id": "4c1502d7",
+    "paper_url": "https://arxiv.org/abs/2601.21233",
+    "arxiv_id": "2601.21233",
+    "error": "fetch_failed"
+  },
+  "2dc05414": {
+    "strategy_id": "2dc05414",
+    "paper_url": "https://arxiv.org/abs/2407.09447",
+    "arxiv_id": "2407.09447",
+    "error": "fetch_failed"
+  },
+  "491f2122": {
+    "strategy_id": "491f2122",
+    "paper_url": "https://arxiv.org/abs/2307.15043",
+    "arxiv_id": "2307.15043",
+    "error": "fetch_failed"
+  },
+  "508eaa8e": {
+    "strategy_id": "508eaa8e",
+    "paper_url": "https://arxiv.org/abs/2406.02044",
+    "arxiv_id": "2406.02044",
+    "error": "fetch_failed"
+  },
+  "ef722a3d": {
+    "strategy_id": "ef722a3d",
+    "paper_url": "https://arxiv.org/abs/2407.03876",
+    "arxiv_id": "2407.03876",
+    "error": "fetch_failed"
+  },
+  "a72867b5": {
+    "strategy_id": "a72867b5",
+    "paper_url": "https://arxiv.org/abs/2601.03699",
+    "arxiv_id": "2601.03699",
+    "error": "fetch_failed"
+  }
+}
