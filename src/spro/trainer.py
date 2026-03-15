@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from typing import List, Dict
 
+import gc
 import torch
 import torch.nn.functional as F
 
@@ -65,6 +66,14 @@ class SingleExampleSPROTrainer:
         """Print a separator line."""
         if self.verbose:
             print(char * length)
+
+    def clear_memory(self, aggressive: bool = False):
+        """Clear GPU memory cache."""
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            if aggressive:
+                torch.cuda.synchronize()
 
     def print_full_episode(self, episode: ExecutedEpisode, title: str = "EPISODE"):
         """Print full details of an episode."""
@@ -172,6 +181,10 @@ class SingleExampleSPROTrainer:
             ))
 
             self.log(f"Plan {idx+1}: {len(prompts)} prompts generated", indent=2)
+
+        # Clear generation cache
+        del outputs
+        self.clear_memory()
 
         self.log(f"Valid plans: {len(plans)}/{n}", indent=1)
         return plans
@@ -295,10 +308,15 @@ class SingleExampleSPROTrainer:
             )
 
         # Log advantage statistics
-        valid_adv = advantages[masks_batch.bool()]
+        valid_mask = masks_batch.bool()
+        valid_adv = advantages[valid_mask]
         if valid_adv.numel() > 0:
             self.log(f"  Advantages: mean={valid_adv.mean():.4f}, std={valid_adv.std():.4f}, "
                     f"min={valid_adv.min():.4f}, max={valid_adv.max():.4f}", indent=1)
+
+        # Cleanup intermediate tensors
+        del all_log_ratios, all_masks, log_ratios_batch, masks_batch, valid_mask, valid_adv
+        self.clear_memory()
 
         return advantages
 
@@ -371,7 +389,15 @@ class SingleExampleSPROTrainer:
 
             self.log(f"Plan {i+1}: policy_loss={policy_loss.item():.4f}, kl_loss={kl_loss.item():.4f}", indent=1)
 
+            # Clear per-episode tensors
+            del token_ids, target_ids, ref_input, ep_advantages
+            del outputs, logits, new_log_probs, old_outputs, old_logits, old_log_probs
+            del ratio, adv, surr1, surr2, response_mask, policy_loss, kl, kl_loss, loss
+
         FastLanguageModel.for_inference(self.policy_model)
+
+        # Clear after all updates
+        self.clear_memory(aggressive=True)
 
         avg_loss = total_loss / len(episodes)
         self.log(f"Average Loss: {avg_loss:.4f}", indent=1)
@@ -472,6 +498,14 @@ class SingleExampleSPROTrainer:
             intent_stats.append(step_stats)
 
             self.all_rollouts.extend([ep.to_dict() for ep in episodes])
+
+            # Limit rollouts in memory to prevent OOM
+            if len(self.all_rollouts) > self.config.max_rollouts_in_memory:
+                self.all_rollouts = self.all_rollouts[-self.config.max_rollouts_in_memory:]
+
+            # Cleanup after each attempt
+            del plans, episodes, rewards, rewards_tensor, advantages
+            self.clear_memory(aggressive=True)
 
         # Save successful rollout
         success = best_score >= self.config.success_threshold

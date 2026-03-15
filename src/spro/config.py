@@ -51,3 +51,6 @@ class SPROConfig:
     # Checkpointing
     checkpoint_dir: str = "./spro_checkpoints"
     save_every_n_intents: int = 5
+
+    # Memory management
+    max_rollouts_in_memory: int = 100  # Limit stored rollouts to prevent OOM
