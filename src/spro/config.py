@@ -18,6 +18,12 @@ class SPROConfig:
     clip_range: float = 0.2
     max_grad_norm: float = 1.0
 
+    # SPRO advantage computation
+    msa_scale: float = 0.1           # Scale factor for MSA component
+    advantage_clip: float = 5.0      # Clip advantages to [-clip, clip]
+    normalize_advantages: bool = True  # Normalize final advantages
+    use_gae_advantages: bool = False   # Use GAE-style discounting (v2)
+
     # SPRO settings
     group_size: int = 8  # Number of parallel attack plans per step
     max_attempts: int = 200  # Max attempts per intent before moving on

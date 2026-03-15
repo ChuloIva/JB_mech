@@ -16,7 +16,7 @@ from .prompts import SEMA_SYSTEM_PROMPT
 from .rewards import compute_episode_reward, score_turn_response
 from .intent_tracker import IntentTracker
 from .api_client import OpenRouterClient
-from .spro_core import compute_log_prob_ratios, compute_spro_advantages
+from .spro_core import compute_log_prob_ratios, compute_spro_advantages, compute_spro_advantages_v2
 
 
 class SingleExampleSPROTrainer:
@@ -275,11 +275,30 @@ class SingleExampleSPROTrainer:
             log_ratios_batch[i, :lr.shape[0]] = lr
             masks_batch[i, :m.shape[0]] = m
 
-        advantages = compute_spro_advantages(
-            rewards.to(device),
-            log_ratios_batch,
-            masks_batch
-        )
+        # Choose advantage computation method
+        if self.config.use_gae_advantages:
+            advantages = compute_spro_advantages_v2(
+                rewards.to(device),
+                log_ratios_batch,
+                masks_batch,
+                gamma=0.99,
+                advantage_clip=self.config.advantage_clip,
+            )
+        else:
+            advantages = compute_spro_advantages(
+                rewards.to(device),
+                log_ratios_batch,
+                masks_batch,
+                msa_scale=self.config.msa_scale,
+                advantage_clip=self.config.advantage_clip,
+                normalize_final=self.config.normalize_advantages,
+            )
+
+        # Log advantage statistics
+        valid_adv = advantages[masks_batch.bool()]
+        if valid_adv.numel() > 0:
+            self.log(f"  Advantages: mean={valid_adv.mean():.4f}, std={valid_adv.std():.4f}, "
+                    f"min={valid_adv.min():.4f}, max={valid_adv.max():.4f}", indent=1)
 
         return advantages
 

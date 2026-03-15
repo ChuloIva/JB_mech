@@ -33,6 +33,9 @@ def __getattr__(name):
     elif name == "compute_spro_advantages":
         from .spro_core import compute_spro_advantages
         return compute_spro_advantages
+    elif name == "compute_spro_advantages_v2":
+        from .spro_core import compute_spro_advantages_v2
+        return compute_spro_advantages_v2
     elif name == "SingleExampleSPROTrainer":
         from .trainer import SingleExampleSPROTrainer
         return SingleExampleSPROTrainer
@@ -64,6 +67,7 @@ __all__ = [
     # SPRO core
     "compute_log_prob_ratios",
     "compute_spro_advantages",
+    "compute_spro_advantages_v2",
     # Trainer
     "SingleExampleSPROTrainer",
 ]
