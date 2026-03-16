@@ -31,10 +31,9 @@ class SPROConfig:
     max_prompts: int = 10  # Maximum prompts per attack plan
 
     # Reward weights (must sum to 1.0)
-    outcome_weight: float = 0.50
-    progress_weight: float = 0.20
-    intent_weight: float = 0.20
-    divergence_weight: float = 0.10
+    # Simplified: let SPRO's MSA handle per-token credit assignment
+    outcome_weight: float = 0.85      # Judge score is the primary signal
+    divergence_weight: float = 0.15   # Bonus for indirect successful attacks
 
     # API settings
     openrouter_api_key: str = ""

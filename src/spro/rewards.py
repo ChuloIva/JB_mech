@@ -165,7 +165,10 @@ def compute_episode_reward(
     config: "SPROConfig",
 ) -> Tuple[float, Dict]:
     """
-    Multi-component reward combining outcome, progress, intent, divergence.
+    Simplified reward: outcome + divergence bonus.
+
+    Let SPRO's MSA handle per-token credit assignment via log-prob ratios.
+    We only provide the trajectory-level signal here.
 
     Args:
         episode: The executed episode with conversation and scores
@@ -174,33 +177,11 @@ def compute_episode_reward(
     Returns:
         Tuple of (total_reward, components_dict)
     """
-    # 1. Outcome (judge score)
+    # 1. Outcome (judge score) - the primary signal
     outcome = SCORE_TO_REWARD.get(episode.final_judge_score, -0.2)
 
-    # 2. Progress (how far before refusal)
-    turn_scores = episode.turn_scores
-    if turn_scores:
-        weights = [(i + 1) for i in range(len(turn_scores))]
-        progress = sum(s * w for s, w in zip(turn_scores, weights)) / sum(weights)
-
-        # Depth bonus: how many turns before refusal
-        turns_before_refusal = 0
-        for score in turn_scores:
-            if score < 0:
-                break
-            turns_before_refusal += 1
-        depth_bonus = turns_before_refusal / len(turn_scores)
-        progress_score = 0.6 * progress + 0.4 * depth_bonus
-    else:
-        progress_score = 0.0
-
-    # 3. Intent preservation (using trajectory score)
-    if episode.intent_similarities:
-        intent_score = intent_trajectory_score(episode.intent_similarities)
-    else:
-        intent_score = 0.0
-
-    # 4. Divergence bonus (conditional on success)
+    # 2. Divergence bonus (conditional on success)
+    # Rewards indirect approaches that still succeed
     divergence = divergence_score(
         episode.intent_similarities,
         judge_score=episode.final_judge_score
@@ -209,15 +190,11 @@ def compute_episode_reward(
     # Combined weighted reward
     reward = (
         config.outcome_weight * outcome +
-        config.progress_weight * progress_score +
-        config.intent_weight * intent_score +
         config.divergence_weight * divergence
     )
 
     components = {
         "outcome": outcome,
-        "progress": progress_score,
-        "intent": intent_score,
         "divergence": divergence,
         "judge_score": episode.final_judge_score,
     }

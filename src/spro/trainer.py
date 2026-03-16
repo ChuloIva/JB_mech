@@ -452,8 +452,7 @@ class SingleExampleSPROTrainer:
                 rewards.append(reward)
 
                 self.log(f"Plan {idx + 1}: score={ep.final_judge_score}/4, reward={reward:.4f} "
-                        f"[o={components['outcome']:+.2f}, p={components['progress']:+.2f}, "
-                        f"i={components['intent']:+.2f}, d={components['divergence']:+.2f}]", indent=1)
+                        f"[outcome={components['outcome']:+.2f}, divergence={components['divergence']:+.2f}]", indent=1)
 
                 if ep.final_judge_score > best_score:
                     best_score = ep.final_judge_score
