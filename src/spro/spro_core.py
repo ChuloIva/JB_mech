@@ -407,16 +407,17 @@ def compute_spro_advantages_three_component(
     trajectory_boundaries: List[dict],       # Per-trajectory: {"reasoning": (s,e), "opening": (s,e), "attack": (s,e)}
     beta: float = 1.0,                       # Scaling for cumulative reward
     advantage_clip: float = 5.0,             # Clip advantages to [-clip, clip]
+    components: List[str] = None,            # Which components to use (default: all three)
 ) -> torch.Tensor:
     """
-    Compute SPRO advantages with three-component MSA (per modification3.md spec).
+    Compute SPRO advantages with component-based MSA (per modification3.md spec).
 
-    Computes MSA at three key checkpoints:
+    Computes MSA at specified checkpoints (default all three):
     1. Reasoning section (strategy planning)
     2. Opening query (first query)
     3. Attack query (final query)
 
-    Middle setup queries get outcome advantage only (no MSA).
+    Components not in the list get outcome advantage only (no MSA).
 
     Args:
         outcome_rewards: Final episode rewards (batch,)
@@ -425,10 +426,14 @@ def compute_spro_advantages_three_component(
         trajectory_boundaries: For each trajectory, dict with reasoning/opening/attack bounds
         beta: Scaling factor for cumulative reward (default 1.0)
         advantage_clip: Clip advantages to this range (default 5.0)
+        components: Which components to compute MSA for (default: ["reasoning", "opening", "attack"])
 
     Returns:
         Tensor of shape (batch, seq_len) with per-token advantages
     """
+    if components is None:
+        components = ["reasoning", "opening", "attack"]
+
     batch_size, seq_len = log_ratios.shape
     device = log_ratios.device
 
@@ -443,8 +448,8 @@ def compute_spro_advantages_three_component(
     # 3. Initialize MSA tensor (0 for middle queries)
     msa = torch.zeros_like(log_ratios)  # (batch, seq_len)
 
-    # 4. Compute MSA for each of the three components
-    for component in ["reasoning", "opening", "attack"]:
+    # 4. Compute MSA for specified components
+    for component in components:
         R_cums = []
         traj_data = []  # (traj_idx, start_tok, end_tok)
 

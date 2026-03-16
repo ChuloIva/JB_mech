@@ -27,6 +27,7 @@ class SPROConfig:
     beta: float = 1.0                  # Scaling for cumulative reward in query-aware MSA
     attack_focused_msa: bool = True    # Only MSA for opening+attack queries (handles variable lengths)
     use_three_component_msa: bool = True  # Use three-component MSA: reasoning + opening + attack (modification3.md)
+    thinking_only_msa: bool = False  # Only MSA for reasoning/thinking section (ignores opening+attack)
 
     # SPRO settings
     group_size: int = 8  # Number of parallel attack plans per step
@@ -43,7 +44,7 @@ class SPROConfig:
     openrouter_api_key: str = ""
     target_model: str = "meta-llama/llama-3.1-8b-instruct"
     judge_model: str = "google/gemma-3-27b-it"
-    max_concurrent_requests: int = 16
+    max_concurrent_requests: int = 50
 
     # vLLM generation
     temperature: float = 0.8

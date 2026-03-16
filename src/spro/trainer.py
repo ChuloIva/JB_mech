@@ -361,8 +361,14 @@ class SingleExampleSPROTrainer:
         has_trajectory_boundaries = all(tb is not None for tb in all_trajectory_boundaries)
 
         if has_trajectory_boundaries and self.config.use_three_component_msa:
-            # Use three-component MSA: reasoning + opening + attack (per modification3.md)
-            self.log("  Using three-component MSA (reasoning + opening + attack)", indent=1)
+            # Determine which components to use for MSA
+            if self.config.thinking_only_msa:
+                components = ["reasoning"]
+                self.log("  Using thinking-only MSA (reasoning)", indent=1)
+            else:
+                components = ["reasoning", "opening", "attack"]
+                self.log("  Using three-component MSA (reasoning + opening + attack)", indent=1)
+
             advantages = compute_spro_advantages_three_component(
                 rewards.to(device),
                 log_ratios_batch,
@@ -370,6 +376,7 @@ class SingleExampleSPROTrainer:
                 trajectory_boundaries=all_trajectory_boundaries,
                 beta=self.config.beta,
                 advantage_clip=self.config.advantage_clip,
+                components=components,
             )
         elif has_query_boundaries and self.config.use_query_aware_msa:
             # Use query-aware SPRO (per modification.md spec)
