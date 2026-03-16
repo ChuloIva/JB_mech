@@ -59,5 +59,9 @@ class SPROConfig:
     checkpoint_dir: str = "./spro_checkpoints"
     save_every_n_intents: int = 5
 
+    # Rollout logging
+    log_rollouts: bool = True                    # Save best/worst rollouts per attempt
+    rollout_log_dir: str = "./rollout_logs"      # Directory for rollout logs
+
     # Memory management
     max_rollouts_in_memory: int = 100  # Limit stored rollouts to prevent OOM

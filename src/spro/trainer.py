@@ -83,6 +83,88 @@ class SingleExampleSPROTrainer:
             if aggressive:
                 torch.cuda.synchronize()
 
+    def save_rollout_samples(
+        self,
+        episodes: List[ExecutedEpisode],
+        intent: str,
+        attempt: int,
+    ):
+        """Save best and worst rollouts from this attempt to log files."""
+        if not self.config.log_rollouts:
+            return
+
+        # Create log directory
+        log_dir = self.config.rollout_log_dir
+        os.makedirs(log_dir, exist_ok=True)
+
+        # Sort by reward
+        sorted_eps = sorted(episodes, key=lambda e: e.reward, reverse=True)
+        best_ep = sorted_eps[0]
+        worst_ep = sorted_eps[-1]
+
+        # Create intent-specific subdirectory (sanitize intent for filename)
+        intent_slug = intent[:50].replace(" ", "_").replace("/", "-")
+        intent_dir = os.path.join(log_dir, intent_slug)
+        os.makedirs(intent_dir, exist_ok=True)
+
+        # Save best
+        best_file = os.path.join(intent_dir, f"attempt_{attempt:03d}_best.txt")
+        self._write_rollout_file(best_file, best_ep, "BEST", attempt)
+
+        # Save worst
+        worst_file = os.path.join(intent_dir, f"attempt_{attempt:03d}_worst.txt")
+        self._write_rollout_file(worst_file, worst_ep, "WORST", attempt)
+
+        # Print summary
+        self.log(f"\nRollouts saved to {intent_dir}/", indent=1)
+        self.log(f"  Best:  reward={best_ep.reward:.4f}, score={best_ep.final_judge_score}/4", indent=1)
+        self.log(f"  Worst: reward={worst_ep.reward:.4f}, score={worst_ep.final_judge_score}/4", indent=1)
+
+    def _write_rollout_file(
+        self,
+        filepath: str,
+        episode: ExecutedEpisode,
+        label: str,
+        attempt: int,
+    ):
+        """Write a single rollout to file."""
+        with open(filepath, "w") as f:
+            f.write(f"{'='*70}\n")
+            f.write(f"{label} ROLLOUT - Attempt {attempt}\n")
+            f.write(f"{'='*70}\n\n")
+
+            # Reward info
+            f.write(f"Intent: {episode.plan.intent}\n")
+            f.write(f"Reward: {episode.reward:.4f}\n")
+            if episode.ida_scores:
+                f.write(f"IDA Scores: A={episode.ida_scores.alignment}, "
+                       f"R={episode.ida_scores.risk}, D={episode.ida_scores.detail}\n")
+            f.write(f"Final Score: {episode.final_judge_score}/4\n")
+            f.write("\n")
+
+            # Thinking/reasoning section
+            f.write(f"{'='*70}\n")
+            f.write("THINKING\n")
+            f.write(f"{'='*70}\n")
+            f.write(episode.plan.thinking)
+            f.write("\n\n")
+
+            # Generated prompts (just the model's output, not responses)
+            f.write(f"{'='*70}\n")
+            f.write("GENERATED PROMPTS\n")
+            f.write(f"{'='*70}\n")
+            for i, prompt in enumerate(episode.plan.prompts, 1):
+                f.write(f"\n--- Prompt {i} ---\n")
+                f.write(prompt)
+                f.write("\n")
+
+            # Turn scores summary
+            f.write(f"\n{'='*70}\n")
+            f.write("TURN SCORES\n")
+            f.write(f"{'='*70}\n")
+            for i, (score, sim) in enumerate(zip(episode.turn_scores, episode.intent_similarities), 1):
+                f.write(f"Turn {i}: score={score:+.2f}, intent_sim={sim:.2f}\n")
+
     def print_full_episode(self, episode: ExecutedEpisode, title: str = "EPISODE"):
         """Print full details of an episode."""
         print(f"\n{'#'*70}")
@@ -654,6 +736,9 @@ class SingleExampleSPROTrainer:
                     self.log(f"  *** NEW BEST (IDA={ida_r:.3f}) ***", indent=1)
 
             rewards_tensor = torch.tensor(rewards, dtype=torch.float32)
+
+            # 4b. Save best/worst rollouts to log files
+            self.save_rollout_samples(episodes, intent, attempt)
 
             # 5. Compute SPRO advantages
             self.log("\nComputing SPRO token-level advantages...", indent=1)
