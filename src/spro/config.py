@@ -13,20 +13,23 @@ class SPROConfig:
     lora_rank: int = 32
 
     # Training hyperparameters
-    learning_rate: float = 1e-5
-    kl_coef: float = 0.02
+    learning_rate: float = 1e-6       # Paper uses 1e-6 with cosine decay
+    kl_coef: float = 0.0              # Paper uses 0 (no KL penalty)
+    entropy_coef: float = 0.001       # Paper uses 0.001 to maintain exploration
     clip_range: float = 0.2
     max_grad_norm: float = 1.0
+    batch_ppo_update: bool = True     # Accumulate gradients, single update per attempt
 
     # SPRO advantage computation
-    msa_scale: float = 0.1           # Scale factor for MSA component
+    msa_scale: float = 1.0           # Scale factor for MSA component (paper uses 1.0)
     advantage_clip: float = 5.0      # Clip advantages to [-clip, clip]
-    normalize_advantages: bool = True  # Normalize final advantages
+    normalize_advantages: bool = False # Paper does NOT do extra final normalization
+    use_paper_msa: bool = True        # Use paper's simple MSA (baseline subtraction only)
     use_gae_advantages: bool = False   # Use GAE-style discounting (v2)
-    use_query_aware_msa: bool = True   # Use query-aware MSA (per modification.md)
+    use_query_aware_msa: bool = False  # Use query-aware MSA (per modification.md)
     beta: float = 1.0                  # Scaling for cumulative reward in query-aware MSA
     attack_focused_msa: bool = True    # Only MSA for opening+attack queries (handles variable lengths)
-    use_three_component_msa: bool = True  # Use three-component MSA: reasoning + opening + attack (modification3.md)
+    use_three_component_msa: bool = False  # Use three-component MSA: reasoning + opening + attack
     thinking_only_msa: bool = False  # Only MSA for reasoning/thinking section (ignores opening+attack)
 
     # SPRO settings

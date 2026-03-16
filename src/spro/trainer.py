@@ -24,6 +24,7 @@ from .spro_core import (
     compute_spro_advantages_v2,
     compute_spro_advantages_query_aware,
     compute_spro_advantages_three_component,
+    compute_spro_advantages_paper,
 )
 
 
@@ -360,7 +361,43 @@ class SingleExampleSPROTrainer:
         has_query_boundaries = all(len(qb) > 0 for qb in all_query_boundaries)
         has_trajectory_boundaries = all(tb is not None for tb in all_trajectory_boundaries)
 
-        if has_trajectory_boundaries and self.config.use_three_component_msa:
+        # Paper-aligned MSA (highest priority if enabled)
+        if self.config.use_paper_msa:
+            # Determine which components get MSA (if selective)
+            if has_trajectory_boundaries and self.config.thinking_only_msa:
+                components = ["reasoning"]
+                self.log("  Using paper MSA (thinking-only)", indent=1)
+                advantages = compute_spro_advantages_paper(
+                    rewards.to(device),
+                    log_ratios_batch,
+                    masks_batch,
+                    beta=self.config.beta,
+                    advantage_clip=self.config.advantage_clip,
+                    trajectory_boundaries=all_trajectory_boundaries,
+                    components=components,
+                )
+            elif has_trajectory_boundaries and self.config.use_three_component_msa:
+                components = ["reasoning", "opening", "attack"]
+                self.log("  Using paper MSA (reasoning + opening + attack)", indent=1)
+                advantages = compute_spro_advantages_paper(
+                    rewards.to(device),
+                    log_ratios_batch,
+                    masks_batch,
+                    beta=self.config.beta,
+                    advantage_clip=self.config.advantage_clip,
+                    trajectory_boundaries=all_trajectory_boundaries,
+                    components=components,
+                )
+            else:
+                self.log("  Using paper MSA (whole rollout)", indent=1)
+                advantages = compute_spro_advantages_paper(
+                    rewards.to(device),
+                    log_ratios_batch,
+                    masks_batch,
+                    beta=self.config.beta,
+                    advantage_clip=self.config.advantage_clip,
+                )
+        elif has_trajectory_boundaries and self.config.use_three_component_msa:
             # Determine which components to use for MSA
             if self.config.thinking_only_msa:
                 components = ["reasoning"]
@@ -428,7 +465,14 @@ class SingleExampleSPROTrainer:
         episodes: List[ExecutedEpisode],
         advantages: torch.Tensor,
     ) -> float:
-        """PPO-clip policy gradient update with per-token advantages."""
+        """
+        PPO-clip policy gradient update with per-token advantages.
+
+        Key changes from original (aligned with paper):
+        - Batched updates: accumulate gradients, single optimizer.step()
+        - Entropy regularization: maintains exploration (paper uses 0.001)
+        - KL penalty is optional (paper uses 0)
+        """
         from unsloth import FastLanguageModel
 
         self.log("\n" + "="*60)
@@ -439,7 +483,14 @@ class SingleExampleSPROTrainer:
         self.policy_model.train()
         device = next(self.policy_model.parameters()).device
 
-        total_loss = 0.0
+        # Zero gradients once at start (for batched mode)
+        if self.config.batch_ppo_update:
+            self.optimizer.zero_grad()
+
+        total_policy_loss = 0.0
+        total_entropy_loss = 0.0
+        total_kl_loss = 0.0
+        total_tokens = 0
 
         for i, ep in enumerate(episodes):
             token_ids = ep.plan.token_ids.clone().unsqueeze(0).to(device)
@@ -450,8 +501,13 @@ class SingleExampleSPROTrainer:
             logits = outputs.logits[:, :-1, :]
             target_ids = token_ids[:, 1:].clone()
 
-            new_log_probs = F.log_softmax(logits, dim=-1)
-            new_log_probs = new_log_probs.gather(-1, target_ids.unsqueeze(-1)).squeeze(-1)
+            # Compute log probs and entropy
+            log_probs_all = F.log_softmax(logits, dim=-1)
+            probs_all = torch.exp(log_probs_all)
+            new_log_probs = log_probs_all.gather(-1, target_ids.unsqueeze(-1)).squeeze(-1)
+
+            # Entropy: -sum(p * log(p)) per token
+            entropy = -(probs_all * log_probs_all).sum(dim=-1)  # (1, seq_len-1)
 
             with torch.no_grad():
                 ref_input = token_ids.clone().to(self.ref_model.device)
@@ -472,38 +528,69 @@ class SingleExampleSPROTrainer:
 
             response_mask = torch.zeros_like(adv)
             response_mask[response_start-1:] = 1.0
+            num_tokens = response_mask.sum()
 
+            # Policy loss (PPO clipped objective)
             policy_loss = -torch.min(surr1, surr2) * response_mask
-            policy_loss = policy_loss.sum() / (response_mask.sum() + 1e-8)
+            policy_loss = policy_loss.sum() / (num_tokens + 1e-8)
 
+            # Entropy loss (negative because we want to maximize entropy)
+            entropy_loss = -self.config.entropy_coef * (entropy.squeeze(0) * response_mask).sum() / (num_tokens + 1e-8)
+
+            # KL loss (optional, paper uses 0)
             kl = (old_log_probs.detach() - new_log_probs) * response_mask
-            kl_loss = self.config.kl_coef * kl.sum() / (response_mask.sum() + 1e-8)
+            kl_loss = self.config.kl_coef * kl.sum() / (num_tokens + 1e-8)
 
-            loss = policy_loss + kl_loss
-            total_loss += loss.item()
+            # Combined loss
+            loss = policy_loss + entropy_loss + kl_loss
 
-            self.optimizer.zero_grad()
-            loss.backward()
+            # Track for logging
+            total_policy_loss += policy_loss.item()
+            total_entropy_loss += entropy_loss.item()
+            total_kl_loss += kl_loss.item()
+            total_tokens += num_tokens.item()
+
+            if self.config.batch_ppo_update:
+                # Accumulate gradients (scaled by 1/N for averaging)
+                (loss / len(episodes)).backward()
+            else:
+                # Original per-episode update
+                self.optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(
+                    self.policy_model.parameters(),
+                    self.config.max_grad_norm
+                )
+                self.optimizer.step()
+
+            self.log(f"Plan {i+1}: policy={policy_loss.item():.4f}, "
+                    f"entropy={entropy_loss.item():.4f}, kl={kl_loss.item():.4f}", indent=1)
+
+            # Clear per-episode tensors
+            del token_ids, target_ids, ref_input, ep_advantages
+            del outputs, logits, log_probs_all, probs_all, new_log_probs, entropy
+            del old_outputs, old_logits, old_log_probs
+            del ratio, adv, surr1, surr2, response_mask, policy_loss, entropy_loss, kl, kl_loss, loss
+
+        # Single optimizer step for batched mode
+        if self.config.batch_ppo_update:
             torch.nn.utils.clip_grad_norm_(
                 self.policy_model.parameters(),
                 self.config.max_grad_norm
             )
             self.optimizer.step()
-
-            self.log(f"Plan {i+1}: policy_loss={policy_loss.item():.4f}, kl_loss={kl_loss.item():.4f}", indent=1)
-
-            # Clear per-episode tensors (no empty_cache here for speed)
-            del token_ids, target_ids, ref_input, ep_advantages
-            del outputs, logits, new_log_probs, old_outputs, old_logits, old_log_probs
-            del ratio, adv, surr1, surr2, response_mask, policy_loss, kl, kl_loss, loss
+            self.log("  [Batched update: single optimizer.step()]", indent=1)
 
         FastLanguageModel.for_inference(self.policy_model)
 
         # Clear after all updates
         self.clear_memory(aggressive=True)
 
-        avg_loss = total_loss / len(episodes)
-        self.log(f"Average Loss: {avg_loss:.4f}", indent=1)
+        avg_loss = (total_policy_loss + total_entropy_loss + total_kl_loss) / len(episodes)
+        self.log(f"Average Loss: {avg_loss:.4f} "
+                f"(policy={total_policy_loss/len(episodes):.4f}, "
+                f"entropy={total_entropy_loss/len(episodes):.4f}, "
+                f"kl={total_kl_loss/len(episodes):.4f})", indent=1)
 
         return avg_loss
 

@@ -39,6 +39,9 @@ def __getattr__(name):
     elif name == "compute_spro_advantages_three_component":
         from .spro_core import compute_spro_advantages_three_component
         return compute_spro_advantages_three_component
+    elif name == "compute_spro_advantages_paper":
+        from .spro_core import compute_spro_advantages_paper
+        return compute_spro_advantages_paper
     elif name == "SingleExampleSPROTrainer":
         from .trainer import SingleExampleSPROTrainer
         return SingleExampleSPROTrainer
@@ -75,6 +78,7 @@ __all__ = [
     "compute_spro_advantages_v2",
     "compute_spro_advantages_query_aware",
     "compute_spro_advantages_three_component",
+    "compute_spro_advantages_paper",
     # Trainer
     "SingleExampleSPROTrainer",
 ]

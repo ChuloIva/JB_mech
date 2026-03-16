@@ -1,8 +1,112 @@
-"""Core SPRO algorithms: log-prob ratios and advantage computation."""
+"""Core SPRO algorithms: log-prob ratios and advantage computation.
+
+Based on arXiv:2507.01551 - Self-Guided Process Reward Optimization (SPRO)
+"""
 
 from typing import List, Tuple, Optional
 import torch
 import torch.nn.functional as F
+
+
+def compute_spro_advantages_paper(
+    outcome_rewards: torch.Tensor,      # (batch,) - final episode rewards
+    log_ratios: torch.Tensor,           # (batch, seq_len) - per-token log-prob ratios
+    response_mask: torch.Tensor,        # (batch, seq_len) - 1 for response tokens
+    beta: float = 1.0,                  # Scaling for cumulative reward
+    advantage_clip: float = 5.0,        # Clip advantages to [-clip, clip]
+    trajectory_boundaries: List[dict] = None,  # Optional: per-trajectory component bounds
+    components: List[str] = None,       # Optional: which components get MSA ["reasoning", "opening", "attack"]
+) -> torch.Tensor:
+    """
+    Compute SPRO advantages exactly as described in the paper (arXiv:2507.01551).
+
+    Paper formulas:
+    - Eq. 11: R_t = sum(j=0 to t) beta * log[pi/pi_ref]
+    - Eq. 12: MSA_{i,t} = R_{i,t} - mean({R_{j,t} for j in batch})
+    - Eq. 13: A_{i,t} = [r_o(y_i) - mean(r_o)] / std(r_o) + MSA_{i,t}
+
+    Key differences from other implementations:
+    - MSA uses simple baseline subtraction (no per-timestep normalization)
+    - NO additional final normalization
+    - NO scaling factor for MSA (it's added directly)
+
+    Optional selective MSA:
+    - If trajectory_boundaries and components are provided, MSA is only computed
+      for tokens within the specified components (e.g., ["reasoning"] for thinking-only)
+    - Tokens outside these components get outcome advantage only (MSA=0)
+
+    Args:
+        outcome_rewards: Final episode rewards (batch,)
+        log_ratios: Per-token log-prob ratios (batch, seq_len)
+        response_mask: Binary mask for response tokens (batch, seq_len)
+        beta: Scaling factor for cumulative reward (default 1.0)
+        advantage_clip: Clip advantages to this range (default 5.0)
+        trajectory_boundaries: Optional list of dicts with "reasoning", "opening", "attack" bounds
+        components: Optional list of components to apply MSA to (default: all tokens)
+
+    Returns:
+        Tensor of shape (batch, seq_len) with per-token advantages
+    """
+    batch_size, seq_len = log_ratios.shape
+    device = log_ratios.device
+
+    # 1. Outcome advantage (Eq. 13 first term): normalized outcome reward
+    outcome_mean = outcome_rewards.mean()
+    outcome_std = outcome_rewards.std() + 1e-8
+    outcome_advantage = (outcome_rewards - outcome_mean) / outcome_std  # (batch,)
+
+    # 2. Cumulative process rewards (Eq. 11): R_t = sum(beta * log_ratio[0:t])
+    cumulative_rewards = torch.cumsum(beta * log_ratios, dim=1)  # (batch, seq_len)
+
+    # 3. Build MSA mask if selective components requested
+    msa_mask = response_mask.clone()  # Default: all response tokens
+
+    if trajectory_boundaries is not None and components is not None:
+        # Create selective mask - only specified components get MSA
+        msa_mask = torch.zeros_like(response_mask)
+
+        for traj_idx, bounds in enumerate(trajectory_boundaries):
+            if bounds is None:
+                continue
+
+            for component in components:
+                if component in bounds:
+                    start_tok, end_tok = bounds[component]
+                    if start_tok == end_tok == 0:
+                        continue  # Empty boundary
+                    start_tok = max(0, start_tok)
+                    end_tok = min(end_tok, seq_len - 1)
+                    msa_mask[traj_idx, start_tok:end_tok + 1] = 1.0
+
+    # 4. MSA (Eq. 12): baseline subtraction at each timestep
+    # MSA_{i,t} = R_{i,t} - mean({R_{j,t}}) for all j in batch
+    msa = torch.zeros_like(log_ratios)
+
+    for t in range(seq_len):
+        # Only compute MSA for tokens in the msa_mask
+        valid_mask = msa_mask[:, t].bool()
+        if valid_mask.sum() > 1:
+            # Get cumulative rewards at this timestep for valid trajectories
+            values_t = cumulative_rewards[valid_mask, t]
+            baseline_t = values_t.mean()
+            # Simple baseline subtraction (no std normalization!)
+            msa[valid_mask, t] = cumulative_rewards[valid_mask, t] - baseline_t
+        elif valid_mask.sum() == 1:
+            # Single sample: MSA is 0 (no comparison possible)
+            msa[valid_mask, t] = 0.0
+
+    # 5. Combined advantage (Eq. 13): outcome + MSA
+    # Expand outcome to (batch, seq_len) and add MSA directly (no scaling)
+    # All response tokens get outcome advantage, but only msa_mask tokens get MSA
+    advantages = outcome_advantage.unsqueeze(1).expand(-1, seq_len) + msa
+
+    # 6. Apply response mask (not msa_mask - all response tokens get advantages)
+    advantages = advantages * response_mask
+
+    # 7. Clip to prevent extreme values
+    advantages = torch.clamp(advantages, -advantage_clip, advantage_clip)
+
+    return advantages
 
 
 def compute_log_prob_ratios(
