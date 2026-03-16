@@ -219,8 +219,6 @@ class SingleExampleSPROTrainer:
             conversation=conversation,
             turn_scores=turn_scores,
             intent_similarities=similarities,
-            final_judge_score=0,
-            reward=0.0,
         )
 
     async def execute_plans_parallel(self, plans: List[AttackPlan]) -> List[ExecutedEpisode]:
