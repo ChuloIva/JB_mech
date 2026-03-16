@@ -1,7 +1,9 @@
 """OpenRouter API client for SPRO training."""
 
 import asyncio
+import json
 import os
+import re
 from typing import List, Dict, Tuple
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -9,6 +11,7 @@ import httpx
 
 from .prompts import JUDGE_PROMPT
 from .config import SPROConfig
+from .data_structures import IDAScores
 
 
 class OpenRouterClient:
@@ -56,6 +59,38 @@ class OpenRouterClient:
                     raise  # Retry on rate limit
                 return f"[ERROR: {e}]"
 
+    def _parse_ida_json(self, text: str) -> IDAScores:
+        """Parse IDA scores from judge response JSON."""
+        # Try to extract JSON from response
+        try:
+            # First try direct parse
+            data = json.loads(text.strip())
+        except json.JSONDecodeError:
+            # Try to find JSON in the response
+            json_match = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+            if json_match:
+                try:
+                    data = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    # Return default scores on parse failure
+                    return IDAScores(
+                        alignment=0, risk=0, detail=0,
+                        rationale=f"[JSON parse error: {text[:200]}]"
+                    )
+            else:
+                return IDAScores(
+                    alignment=0, risk=0, detail=0,
+                    rationale=f"[No JSON found: {text[:200]}]"
+                )
+
+        # Extract scores with defaults
+        return IDAScores(
+            alignment=int(data.get("intent_alignment_score", 0)),
+            risk=int(data.get("compliance_risk_score", 0)),
+            detail=int(data.get("detail_level_score", 0)),
+            rationale=data.get("rationale", ""),
+        )
+
     @retry(
         wait=wait_exponential(multiplier=1, min=2, max=30),
         stop=stop_after_attempt(5),
@@ -66,49 +101,48 @@ class OpenRouterClient:
         self,
         intent: str,
         conversation: List[Tuple[str, str]],
-    ) -> Tuple[int, str]:
+    ) -> IDAScores:
         """
-        Judge a multi-turn conversation.
+        Judge a multi-turn conversation using IDA scoring.
+
+        Scores only the FINAL response against the original intent.
 
         Args:
-            intent: Original harmful intent
+            intent: Original harmful intent (the request)
             conversation: List of (prompt, response) tuples
 
         Returns:
-            Tuple of (score, reasoning)
+            IDAScores with alignment, risk, detail scores
         """
-        # Format conversation
-        conv_text = ""
-        for i, (prompt, response) in enumerate(conversation, 1):
-            conv_text += f"\n--- Turn {i} ---\n"
-            conv_text += f"User: {prompt}\n"
-            conv_text += f"Assistant: {response}\n"
+        if not conversation:
+            return IDAScores(alignment=0, risk=0, detail=0, rationale="Empty conversation")
 
-        judge_input = JUDGE_PROMPT.format(intent=intent, conversation=conv_text)
+        # Get the final response only
+        final_response = conversation[-1][1]
+
+        # Format judge input
+        judge_input = JUDGE_PROMPT.format(
+            request=intent,
+            response=final_response
+        )
 
         async with self.semaphore:
             try:
                 response = await self.client.chat.completions.create(
                     model=self.config.judge_model,
                     messages=[{"role": "user", "content": judge_input}],
-                    max_tokens=1000,
+                    max_tokens=500,
                     temperature=0.1,
                 )
-                reasoning = response.choices[0].message.content
-                # Parse score from last line
-                score = 2  # Default
-                for line in reversed(reasoning.strip().split('\n')):
-                    for char in line:
-                        if char in '1234':
-                            score = int(char)
-                            break
-                    if score != 2:
-                        break
-                return score, reasoning
+                raw_response = response.choices[0].message.content
+                return self._parse_ida_json(raw_response)
             except Exception as e:
                 if "429" in str(e):
                     raise
-                return 2, f"[ERROR: {e}]"
+                return IDAScores(
+                    alignment=0, risk=0, detail=0,
+                    rationale=f"[ERROR: {e}]"
+                )
 
     async def test_connection(self) -> str:
         """Test API connection."""

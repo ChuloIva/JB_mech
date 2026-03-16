@@ -6,15 +6,12 @@ Based on arXiv:2507.01551 - Self-Guided Process Reward Optimization
 
 # Core imports (no external deps)
 from .config import SPROConfig
-from .data_structures import AttackPlan, ExecutedEpisode
+from .data_structures import AttackPlan, ExecutedEpisode, IDAScores
 from .parsing import parse_sema_output
 from .prompts import SEMA_SYSTEM_PROMPT, JUDGE_PROMPT
 from .rewards import (
-    SCORE_TO_REWARD,
-    outcome_reward,
     score_turn_response,
-    divergence_score,
-    intent_trajectory_score,
+    divergence_bonus,
     compute_episode_reward,
 )
 
@@ -48,16 +45,14 @@ __all__ = [
     # Data structures
     "AttackPlan",
     "ExecutedEpisode",
+    "IDAScores",
     # Parsing
     "parse_sema_output",
     # Intent tracking
     "IntentTracker",
     # Rewards
-    "SCORE_TO_REWARD",
-    "outcome_reward",
     "score_turn_response",
-    "divergence_score",
-    "intent_trajectory_score",
+    "divergence_bonus",
     "compute_episode_reward",
     # Prompts
     "SEMA_SYSTEM_PROMPT",

@@ -82,7 +82,10 @@ class SingleExampleSPROTrainer:
         print(f"{'#'*70}")
 
         print(f"\nINTENT: {episode.plan.intent}")
-        print(f"JUDGE SCORE: {episode.final_judge_score}/4")
+        if episode.ida_scores:
+            ida = episode.ida_scores
+            print(f"IDA SCORES: Alignment={ida.alignment} Risk={ida.risk} Detail={ida.detail}")
+            print(f"IDA REWARD: {ida.compute_reward():.4f}")
         print(f"TOTAL REWARD: {episode.reward:.4f}")
 
         print(f"\n{'='*70}")
@@ -110,11 +113,13 @@ class SingleExampleSPROTrainer:
         print("REWARD BREAKDOWN")
         print(f"{'='*70}")
         for k, v in episode.reward_components.items():
-            if k == 'judge_score':
+            if isinstance(v, int):
                 print(f"  {k}: {v}")
             else:
                 print(f"  {k}: {v:+.4f}")
         print(f"  TOTAL: {episode.reward:+.4f}")
+        if episode.ida_scores and episode.ida_scores.rationale:
+            print(f"\nJUDGE RATIONALE: {episode.ida_scores.rationale}")
         print(f"{'#'*70}\n")
 
     def print_episode_summary(self, episode: ExecutedEpisode, plan_idx: int):
@@ -235,20 +240,22 @@ class SingleExampleSPROTrainer:
         return list(episodes)
 
     async def batch_judge_parallel(self, episodes: List[ExecutedEpisode]):
-        """Judge all episodes in parallel."""
+        """Judge all episodes in parallel using IDA scoring."""
         self.log("\n" + "="*60)
-        self.log(f"JUDGING {len(episodes)} CONVERSATIONS IN PARALLEL")
+        self.log(f"JUDGING {len(episodes)} CONVERSATIONS (IDA SCORING)")
         self.log("="*60)
 
         tasks = [
             self.api_client.judge_conversation(ep.plan.intent, ep.conversation)
             for ep in episodes
         ]
-        results = await asyncio.gather(*tasks)
+        ida_scores_list = await asyncio.gather(*tasks)
 
-        for idx, (ep, (score, reasoning)) in enumerate(zip(episodes, results)):
-            ep.final_judge_score = score
-            self.log(f"  Plan {idx + 1}: Score {score}/4", indent=1)
+        for idx, (ep, ida_scores) in enumerate(zip(episodes, ida_scores_list)):
+            ep.ida_scores = ida_scores
+            ida_reward = ida_scores.compute_reward()
+            self.log(f"  Plan {idx + 1}: A={ida_scores.alignment} R={ida_scores.risk} "
+                    f"D={ida_scores.detail} → IDA={ida_reward:.3f}", indent=1)
 
     def compute_batch_spro_advantages(
         self,
@@ -451,13 +458,17 @@ class SingleExampleSPROTrainer:
                 ep.reward_components = components
                 rewards.append(reward)
 
-                self.log(f"Plan {idx + 1}: score={ep.final_judge_score}/4, reward={reward:.4f} "
-                        f"[outcome={components['outcome']:+.2f}, divergence={components['divergence']:+.2f}]", indent=1)
+                ida_r = components.get('ida_reward', 0)
+                div = components.get('divergence', 0)
+                self.log(f"Plan {idx + 1}: IDA={ida_r:.3f} reward={reward:.4f} "
+                        f"[A={components.get('alignment', 0)} R={components.get('risk', 0)} "
+                        f"D={components.get('detail', 0)} div={div:+.2f}]", indent=1)
 
+                # Track best by IDA reward (mapped to legacy score for compatibility)
                 if ep.final_judge_score > best_score:
                     best_score = ep.final_judge_score
                     best_episode = ep
-                    self.log(f"  *** NEW BEST SCORE: {best_score} ***", indent=1)
+                    self.log(f"  *** NEW BEST (IDA={ida_r:.3f}) ***", indent=1)
 
             rewards_tensor = torch.tensor(rewards, dtype=torch.float32)
 
