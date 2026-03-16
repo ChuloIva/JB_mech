@@ -1,8 +1,24 @@
 """Data structures for SPRO training."""
 
 from dataclasses import dataclass, field
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, TYPE_CHECKING
 import torch
+
+
+@dataclass
+class QueryBoundary:
+    """Token boundaries for a single query."""
+    query_idx: int      # 0-indexed query number
+    start: int          # Token position where query starts
+    end: int            # Token position where query ends (inclusive)
+
+
+@dataclass
+class TrajectoryBoundaries:
+    """Token boundaries for the three key components: reasoning, opening, attack."""
+    reasoning: Tuple[int, int] = (0, 0)   # (start, end) for reasoning section
+    opening: Tuple[int, int] = (0, 0)     # (start, end) for first query
+    attack: Tuple[int, int] = (0, 0)      # (start, end) for last query (attack)
 
 
 @dataclass
@@ -14,6 +30,8 @@ class AttackPlan:
     prompts: List[str]                   # Extracted numbered prompts [p1, p2, ...]
     token_ids: torch.Tensor              # Tokenized plan for SPRO
     response_start_idx: int              # Where response tokens begin
+    query_boundaries: List[QueryBoundary] = field(default_factory=list)  # Token positions per query
+    trajectory_boundaries: Optional[TrajectoryBoundaries] = None  # Three-component boundaries
 
     def to_dict(self) -> dict:
         return {
@@ -22,6 +40,15 @@ class AttackPlan:
             "thinking": self.thinking,
             "prompts": self.prompts,
             "response_start_idx": self.response_start_idx,
+            "query_boundaries": [
+                {"query_idx": qb.query_idx, "start": qb.start, "end": qb.end}
+                for qb in self.query_boundaries
+            ],
+            "trajectory_boundaries": {
+                "reasoning": self.trajectory_boundaries.reasoning,
+                "opening": self.trajectory_boundaries.opening,
+                "attack": self.trajectory_boundaries.attack,
+            } if self.trajectory_boundaries else None,
         }
 
 

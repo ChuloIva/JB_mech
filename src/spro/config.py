@@ -23,6 +23,10 @@ class SPROConfig:
     advantage_clip: float = 5.0      # Clip advantages to [-clip, clip]
     normalize_advantages: bool = True  # Normalize final advantages
     use_gae_advantages: bool = False   # Use GAE-style discounting (v2)
+    use_query_aware_msa: bool = True   # Use query-aware MSA (per modification.md)
+    beta: float = 1.0                  # Scaling for cumulative reward in query-aware MSA
+    attack_focused_msa: bool = True    # Only MSA for opening+attack queries (handles variable lengths)
+    use_three_component_msa: bool = True  # Use three-component MSA: reasoning + opening + attack (modification3.md)
 
     # SPRO settings
     group_size: int = 8  # Number of parallel attack plans per step

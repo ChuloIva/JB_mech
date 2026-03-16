@@ -12,12 +12,19 @@ import torch.nn.functional as F
 
 from .config import SPROConfig
 from .data_structures import AttackPlan, ExecutedEpisode
-from .parsing import parse_sema_output
+from .parsing import parse_sema_output, find_query_token_boundaries, find_reasoning_token_boundaries
+from .data_structures import QueryBoundary, TrajectoryBoundaries
 from .prompts import SEMA_SYSTEM_PROMPT
 from .rewards import compute_episode_reward, score_turn_response
 from .intent_tracker import IntentTracker
 from .api_client import OpenRouterClient
-from .spro_core import compute_log_prob_ratios, compute_spro_advantages, compute_spro_advantages_v2
+from .spro_core import (
+    compute_log_prob_ratios,
+    compute_spro_advantages,
+    compute_spro_advantages_v2,
+    compute_spro_advantages_query_aware,
+    compute_spro_advantages_three_component,
+)
 
 
 class SingleExampleSPROTrainer:
@@ -176,6 +183,38 @@ class SingleExampleSPROTrainer:
                 self.log(f"Plan {idx+1}: INVALID (only {len(prompts)} prompts)", indent=2)
                 continue
 
+            # Find token boundaries for each query
+            token_bounds = find_query_token_boundaries(
+                self.tokenizer,
+                output_ids,
+                prompt_length,
+                len(prompts),
+            )
+
+            # Convert to QueryBoundary objects
+            query_boundaries = [
+                QueryBoundary(query_idx=i, start=start, end=end)
+                for i, (start, end) in enumerate(token_bounds)
+            ]
+
+            # Find reasoning boundaries
+            reasoning_bounds = find_reasoning_token_boundaries(
+                self.tokenizer,
+                output_ids,
+                prompt_length,
+            )
+
+            # Build trajectory boundaries (reasoning, opening, attack)
+            trajectory_boundaries = None
+            if token_bounds:
+                opening_bounds = token_bounds[0] if len(token_bounds) >= 1 else (0, 0)
+                attack_bounds = token_bounds[-1] if len(token_bounds) >= 1 else (0, 0)
+                trajectory_boundaries = TrajectoryBoundaries(
+                    reasoning=reasoning_bounds,
+                    opening=opening_bounds,
+                    attack=attack_bounds,
+                )
+
             plans.append(AttackPlan(
                 intent=intent,
                 plan_text=gen_text,
@@ -183,12 +222,15 @@ class SingleExampleSPROTrainer:
                 prompts=prompts,
                 token_ids=output_ids.clone().detach().cpu(),
                 response_start_idx=prompt_length,
+                query_boundaries=query_boundaries,
+                trajectory_boundaries=trajectory_boundaries,
             ))
 
-            self.log(f"Plan {idx+1}: {len(prompts)} prompts generated", indent=2)
+            self.log(f"Plan {idx+1}: {len(prompts)} prompts, {len(query_boundaries)} query bounds, "
+                     f"reasoning={reasoning_bounds[1]-reasoning_bounds[0]} toks", indent=2)
 
         # Clear generation cache
-        del outputs
+        del outputs, prompt_ids
         self.clear_memory()
 
         self.log(f"Valid plans: {len(plans)}/{n}", indent=1)
@@ -265,6 +307,7 @@ class SingleExampleSPROTrainer:
 
         all_log_ratios = []
         all_masks = []
+        all_query_boundaries = []
         max_len = 0
 
         for ep in episodes:
@@ -282,9 +325,29 @@ class SingleExampleSPROTrainer:
             mask = torch.zeros_like(log_ratios)
             mask[ep.plan.response_start_idx:] = 1.0
 
-            all_log_ratios.append(log_ratios)
+            # Detach to break graph, keep on GPU for speed
+            all_log_ratios.append(log_ratios.detach())
             all_masks.append(mask)
             max_len = max(max_len, log_ratios.shape[0])
+
+            # Extract query boundaries as (start, end) tuples
+            qb_tuples = [(qb.start, qb.end) for qb in ep.plan.query_boundaries]
+            all_query_boundaries.append(qb_tuples)
+
+            del token_ids, attention_mask
+
+        # Extract trajectory boundaries for three-component MSA
+        all_trajectory_boundaries = []
+        for ep in episodes:
+            if ep.plan.trajectory_boundaries:
+                tb = ep.plan.trajectory_boundaries
+                all_trajectory_boundaries.append({
+                    "reasoning": tb.reasoning,
+                    "opening": tb.opening,
+                    "attack": tb.attack,
+                })
+            else:
+                all_trajectory_boundaries.append(None)
 
         log_ratios_batch = torch.zeros(len(episodes), max_len, device=device)
         masks_batch = torch.zeros(len(episodes), max_len, device=device)
@@ -293,8 +356,35 @@ class SingleExampleSPROTrainer:
             log_ratios_batch[i, :lr.shape[0]] = lr
             masks_batch[i, :m.shape[0]] = m
 
-        # Choose advantage computation method
-        if self.config.use_gae_advantages:
+        # Check if we have boundaries for different MSA modes
+        has_query_boundaries = all(len(qb) > 0 for qb in all_query_boundaries)
+        has_trajectory_boundaries = all(tb is not None for tb in all_trajectory_boundaries)
+
+        if has_trajectory_boundaries and self.config.use_three_component_msa:
+            # Use three-component MSA: reasoning + opening + attack (per modification3.md)
+            self.log("  Using three-component MSA (reasoning + opening + attack)", indent=1)
+            advantages = compute_spro_advantages_three_component(
+                rewards.to(device),
+                log_ratios_batch,
+                masks_batch,
+                trajectory_boundaries=all_trajectory_boundaries,
+                beta=self.config.beta,
+                advantage_clip=self.config.advantage_clip,
+            )
+        elif has_query_boundaries and self.config.use_query_aware_msa:
+            # Use query-aware SPRO (per modification.md spec)
+            mode = "attack-focused" if self.config.attack_focused_msa else "all-queries"
+            self.log(f"  Using query-aware MSA ({mode})", indent=1)
+            advantages = compute_spro_advantages_query_aware(
+                rewards.to(device),
+                log_ratios_batch,
+                masks_batch,
+                query_boundaries=all_query_boundaries,
+                beta=self.config.beta,
+                advantage_clip=self.config.advantage_clip,
+                attack_focused=self.config.attack_focused_msa,
+            )
+        elif self.config.use_gae_advantages:
             advantages = compute_spro_advantages_v2(
                 rewards.to(device),
                 log_ratios_batch,
@@ -323,7 +413,8 @@ class SingleExampleSPROTrainer:
         del all_log_ratios, all_masks, log_ratios_batch, masks_batch, valid_mask, valid_adv
         self.clear_memory()
 
-        return advantages
+        # Detach to break computation graph references
+        return advantages.detach()
 
     def ppo_update(
         self,
@@ -394,7 +485,7 @@ class SingleExampleSPROTrainer:
 
             self.log(f"Plan {i+1}: policy_loss={policy_loss.item():.4f}, kl_loss={kl_loss.item():.4f}", indent=1)
 
-            # Clear per-episode tensors
+            # Clear per-episode tensors (no empty_cache here for speed)
             del token_ids, target_ids, ref_input, ep_advantages
             del outputs, logits, new_log_probs, old_outputs, old_logits, old_log_probs
             del ratio, adv, surr1, surr2, response_mask, policy_loss, kl, kl_loss, loss
