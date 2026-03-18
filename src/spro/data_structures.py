@@ -79,6 +79,29 @@ class IDAScores:
 
 
 @dataclass
+class RefusalRewardInfo:
+    """Refusal direction reward components for an episode."""
+    refusal_scores: List[float] = field(default_factory=list)  # Per-turn refusal scores
+    continuity: float = 0.0              # Fraction of trajectory before break
+    smoothness: float = 0.0              # How gradual the escalation was
+    min_score: float = 0.0               # Weakest point in chain
+    final_score: float = 0.0             # Final state score
+    breaking_point: Optional[int] = None # Turn where refusal was triggered (None = never)
+    refusal_reward: float = 0.0          # Combined refusal reward
+
+    def to_dict(self) -> dict:
+        return {
+            "refusal_scores": self.refusal_scores,
+            "continuity": self.continuity,
+            "smoothness": self.smoothness,
+            "min_score": self.min_score,
+            "final_score": self.final_score,
+            "breaking_point": self.breaking_point,
+            "refusal_reward": self.refusal_reward,
+        }
+
+
+@dataclass
 class ExecutedEpisode:
     """An attack plan after execution against target."""
     plan: AttackPlan
@@ -88,6 +111,11 @@ class ExecutedEpisode:
     ida_scores: Optional[IDAScores] = None  # IDA judge scores
     reward: float = 0.0                  # Final reward
     reward_components: Dict[str, float] = field(default_factory=dict)
+
+    # Refusal direction reward (optional, when use_refusal_direction=True)
+    refusal_info: Optional[RefusalRewardInfo] = None
+    early_stopped: bool = False          # True if trajectory was aborted early
+    activations: Optional[List] = None   # Per-turn activations (not serialized)
 
     @property
     def final_judge_score(self) -> int:
@@ -113,4 +141,6 @@ class ExecutedEpisode:
             "ida_scores": self.ida_scores.to_dict() if self.ida_scores else None,
             "reward": self.reward,
             "reward_components": self.reward_components,
+            "refusal_info": self.refusal_info.to_dict() if self.refusal_info else None,
+            "early_stopped": self.early_stopped,
         }

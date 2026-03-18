@@ -1,6 +1,7 @@
 """SPRO Configuration."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
 @dataclass
@@ -65,3 +66,55 @@ class SPROConfig:
 
     # Memory management
     max_rollouts_in_memory: int = 100  # Limit stored rollouts to prevent OOM
+
+    # ==========================================================================
+    # Refusal Direction Reward Settings
+    # ==========================================================================
+    # When enabled, uses local target model to capture activations and compute
+    # refusal direction reward based on trajectory continuity.
+
+    use_refusal_direction: bool = False          # Enable refusal direction reward
+
+    # Local target model (required if use_refusal_direction=True)
+    local_target_model: str = "meta-llama/Llama-3.1-8B-Instruct"
+    local_target_load_in_4bit: bool = True       # Use 4-bit quantization to save VRAM
+    local_target_device: str = "auto"            # Device map for target model
+
+    # Refusal probe settings
+    refusal_direction_path: str = ""             # Path to saved refusal direction tensor
+    refusal_probe_layers: List[int] = field(default_factory=lambda: [15, 20, 25])
+    use_mean_pooling: bool = False               # Mean pool over response vs last token
+
+    # Reward formulation
+    refusal_threshold: float = 0.0               # Score below this = refusal triggered
+    refusal_use_cosine: bool = True              # Use cosine similarity vs dot product
+
+    # Continuity reward weights (how to combine trajectory signals)
+    continuity_weight: float = 0.35              # Weight on unbroken acceptance chain
+    smoothness_weight: float = 0.25              # Weight on gradual escalation
+    min_score_weight: float = 0.25               # Weight on weakest-link score
+    final_score_weight: float = 0.15             # Weight on final state
+
+    # Reward combination (refusal vs IDA)
+    refusal_reward_weight: float = 0.4           # Initial weight for refusal reward
+    anneal_refusal_reward: bool = True           # Decrease refusal weight over training
+    refusal_anneal_start: float = 0.5            # Starting refusal weight
+    refusal_anneal_end: float = 0.1              # Final refusal weight
+    refusal_anneal_steps: int = 100              # Steps to anneal over
+
+    # Early stopping on refusal
+    enable_early_stopping: bool = True           # Abort trajectories that trigger refusal
+    early_stop_threshold: float = -0.3           # Refusal score threshold for early stop
+    recovery_window: int = 1                     # Turns to attempt recovery before abort
+
+    def get_refusal_weight(self, step: int) -> float:
+        """Get refusal reward weight with optional annealing."""
+        if not self.anneal_refusal_reward:
+            return self.refusal_reward_weight
+
+        if step >= self.refusal_anneal_steps:
+            return self.refusal_anneal_end
+
+        # Linear annealing
+        progress = step / self.refusal_anneal_steps
+        return self.refusal_anneal_start + progress * (self.refusal_anneal_end - self.refusal_anneal_start)

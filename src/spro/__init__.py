@@ -6,7 +6,7 @@ Based on arXiv:2507.01551 - Self-Guided Process Reward Optimization
 
 # Core imports (no external deps)
 from .config import SPROConfig
-from .data_structures import AttackPlan, ExecutedEpisode, IDAScores, QueryBoundary, TrajectoryBoundaries
+from .data_structures import AttackPlan, ExecutedEpisode, IDAScores, QueryBoundary, TrajectoryBoundaries, RefusalRewardInfo
 from .parsing import parse_sema_output, find_query_token_boundaries, find_reasoning_token_boundaries
 from .prompts import SEMA_SYSTEM_PROMPT, JUDGE_PROMPT
 from .rewards import (
@@ -45,6 +45,18 @@ def __getattr__(name):
     elif name == "SingleExampleSPROTrainer":
         from .trainer import SingleExampleSPROTrainer
         return SingleExampleSPROTrainer
+    elif name == "LocalTargetWithActivations":
+        from .local_target import LocalTargetWithActivations
+        return LocalTargetWithActivations
+    elif name == "compute_continuity_reward":
+        from .refusal_reward import compute_continuity_reward
+        return compute_continuity_reward
+    elif name == "compute_trajectory_reward":
+        from .refusal_reward import compute_trajectory_reward
+        return compute_trajectory_reward
+    elif name == "create_refusal_reward_info":
+        from .refusal_reward import create_refusal_reward_info
+        return create_refusal_reward_info
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -57,6 +69,7 @@ __all__ = [
     "IDAScores",
     "QueryBoundary",
     "TrajectoryBoundaries",
+    "RefusalRewardInfo",
     # Parsing
     "parse_sema_output",
     "find_query_token_boundaries",
@@ -67,6 +80,11 @@ __all__ = [
     "score_turn_response",
     "divergence_bonus",
     "compute_episode_reward",
+    # Refusal direction reward
+    "LocalTargetWithActivations",
+    "compute_continuity_reward",
+    "compute_trajectory_reward",
+    "create_refusal_reward_info",
     # Prompts
     "SEMA_SYSTEM_PROMPT",
     "JUDGE_PROMPT",

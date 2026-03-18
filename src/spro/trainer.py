@@ -42,6 +42,7 @@ class SingleExampleSPROTrainer:
         intent_tracker: IntentTracker,
         config: SPROConfig,
         verbose: bool = True,
+        local_target=None,  # Optional pre-loaded LocalTargetWithActivations
     ):
         self.policy_model = policy_model
         self.ref_model = ref_model
@@ -50,8 +51,27 @@ class SingleExampleSPROTrainer:
         self.config = config
         self.verbose = verbose
 
-        # API client
+        # API client (used when not using local target, or for judge)
         self.api_client = OpenRouterClient(config)
+
+        # Local target for refusal direction reward
+        self.local_target = local_target
+        if config.use_refusal_direction and local_target is None:
+            self.log("Initializing local target model for refusal direction reward...")
+            from .local_target import LocalTargetWithActivations
+            self.local_target = LocalTargetWithActivations(
+                model_name=config.local_target_model,
+                layers=config.refusal_probe_layers,
+                load_in_4bit=config.local_target_load_in_4bit,
+                device_map=config.local_target_device,
+            )
+            # Load refusal direction if path provided
+            if config.refusal_direction_path:
+                self.local_target.load_refusal_direction(config.refusal_direction_path)
+            self.log("Local target initialized.")
+
+        # Training step counter (for reward annealing)
+        self.training_step = 0
 
         # Optimizer
         self.optimizer = torch.optim.AdamW(
@@ -214,9 +234,15 @@ class SingleExampleSPROTrainer:
 
     def print_episode_summary(self, episode: ExecutedEpisode, plan_idx: int):
         """Print compact summary of an episode (for parallel execution)."""
-        print(f"\n  Plan {plan_idx + 1}: {len(episode.conversation)} turns, "
+        early_stop_str = " [EARLY STOP]" if episode.early_stopped else ""
+        print(f"\n  Plan {plan_idx + 1}: {len(episode.conversation)} turns{early_stop_str}, "
               f"scores={[f'{s:+.2f}' for s in episode.turn_scores]}")
         print(f"    Intent sims: {[f'{s:.2f}' for s in episode.intent_similarities]}")
+
+        # Show refusal scores if available
+        if episode.refusal_info and episode.refusal_info.refusal_scores:
+            ref_scores = [f"{s:.2f}" for s in episode.refusal_info.refusal_scores]
+            print(f"    Refusal scores: {ref_scores} (cont={episode.refusal_info.continuity:.2f})")
 
     def build_sema_prompt(self, intent: str) -> str:
         """Build SEMA-style prompt for multi-turn attack generation."""
@@ -321,6 +347,11 @@ class SingleExampleSPROTrainer:
 
     async def execute_plan(self, plan: AttackPlan, plan_idx: int) -> ExecutedEpisode:
         """Execute a plan step-by-step against target (turns are sequential)."""
+        # Use refusal-aware execution if enabled
+        if self.config.use_refusal_direction and self.local_target is not None:
+            return await self._execute_plan_with_refusal(plan, plan_idx)
+
+        # Original execution path (API-based)
         conversation = []
         turn_scores = []
         context = []
@@ -344,6 +375,79 @@ class SingleExampleSPROTrainer:
             conversation=conversation,
             turn_scores=turn_scores,
             intent_similarities=similarities,
+        )
+
+    async def _execute_plan_with_refusal(self, plan: AttackPlan, plan_idx: int) -> ExecutedEpisode:
+        """
+        Execute plan with local target and refusal direction tracking.
+
+        Uses local target model to capture activations and compute per-turn
+        refusal scores for continuity-based reward.
+        """
+        from .refusal_reward import create_refusal_reward_info
+
+        conversation = []
+        turn_scores = []
+        refusal_scores = []
+        context = []
+        early_stopped = False
+        breaking_point = None
+
+        refusal_triggered_at = None
+        turns_since_refusal = 0
+
+        for turn_idx, prompt in enumerate(plan.prompts):
+            # Query local target with activation capture
+            response, refusal_score, _ = self.local_target.query_with_refusal_score(
+                prompt,
+                context,
+                use_cosine=self.config.refusal_use_cosine,
+            )
+
+            turn_score = score_turn_response(response)
+            refusal_scores.append(refusal_score)
+
+            # Check for refusal (early stopping logic)
+            if self.config.enable_early_stopping:
+                if refusal_score < self.config.early_stop_threshold:
+                    if refusal_triggered_at is None:
+                        refusal_triggered_at = turn_idx
+                    turns_since_refusal += 1
+
+                    # Abort if refusal persists beyond recovery window
+                    if turns_since_refusal > self.config.recovery_window:
+                        conversation.append((prompt, response))
+                        turn_scores.append(turn_score)
+                        early_stopped = True
+                        breaking_point = refusal_triggered_at
+                        self.log(f"  Plan {plan_idx+1}: Early stop at turn {turn_idx+1} "
+                                f"(refusal={refusal_score:.2f})", indent=2)
+                        break
+                else:
+                    turns_since_refusal = 0
+
+            conversation.append((prompt, response))
+            turn_scores.append(turn_score)
+
+            context.append({"role": "user", "content": prompt})
+            context.append({"role": "assistant", "content": response})
+
+        # Compute intent similarities
+        prompts_executed = [p for p, _ in conversation]
+        similarities = self.intent_tracker.compute_similarities(
+            plan.intent, prompts_executed
+        )
+
+        # Create refusal reward info
+        refusal_info = create_refusal_reward_info(refusal_scores, self.config)
+
+        return ExecutedEpisode(
+            plan=plan,
+            conversation=conversation,
+            turn_scores=turn_scores,
+            intent_similarities=similarities,
+            refusal_info=refusal_info,
+            early_stopped=early_stopped,
         )
 
     async def execute_plans_parallel(self, plans: List[AttackPlan]) -> List[ExecutedEpisode]:
@@ -718,16 +822,28 @@ class SingleExampleSPROTrainer:
 
             rewards = []
             for idx, ep in enumerate(episodes):
-                reward, components = compute_episode_reward(ep, self.config)
+                reward, components = compute_episode_reward(ep, self.config, self.training_step)
                 ep.reward = reward
                 ep.reward_components = components
                 rewards.append(reward)
 
                 ida_r = components.get('ida_reward', 0)
                 div = components.get('divergence', 0)
-                self.log(f"Plan {idx + 1}: IDA={ida_r:.3f} reward={reward:.4f} "
-                        f"[A={components.get('alignment', 0)} R={components.get('risk', 0)} "
-                        f"D={components.get('detail', 0)} div={div:+.2f}]", indent=1)
+
+                # Build log message based on what's enabled
+                if self.config.use_refusal_direction and 'refusal_reward' in components:
+                    ref_r = components.get('refusal_reward', 0)
+                    ref_w = components.get('refusal_weight', 0)
+                    cont = components.get('refusal_continuity', 0)
+                    bp = components.get('breaking_point', None)
+                    bp_str = f"break@{bp}" if bp is not None else "no_break"
+                    self.log(f"Plan {idx + 1}: reward={reward:.4f} "
+                            f"[IDA={ida_r:.3f} ref={ref_r:.3f}(w={ref_w:.2f}) "
+                            f"cont={cont:.2f} {bp_str}]", indent=1)
+                else:
+                    self.log(f"Plan {idx + 1}: IDA={ida_r:.3f} reward={reward:.4f} "
+                            f"[A={components.get('alignment', 0)} R={components.get('risk', 0)} "
+                            f"D={components.get('detail', 0)} div={div:+.2f}]", indent=1)
 
                 # Track best by IDA reward (mapped to legacy score for compatibility)
                 if ep.final_judge_score > best_score:
@@ -746,6 +862,9 @@ class SingleExampleSPROTrainer:
 
             # 6. Policy gradient update
             loss = self.ppo_update(episodes, advantages)
+
+            # Increment training step (for reward annealing)
+            self.training_step += 1
 
             # 7. Summary
             avg_reward = sum(rewards) / len(rewards)
