@@ -48,4 +48,4 @@ data/jailbreak
 data/cold_start_sft
 data/jailbreak_datasets/*
 !data/jailbreak_datasets/jailbreakbench.jsonl
-!data/jailbreak_datasets/obliteratus_builtin.json
+!data/jailbreak_datasets/obliteratus_builtin.jsonl
