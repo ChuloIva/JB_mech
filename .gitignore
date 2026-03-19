@@ -46,4 +46,6 @@ models/
 data/alignment_faking
 data/jailbreak
 data/cold_start_sft
-data/jailbreak_datasets
+data/jailbreak_datasets/*
+!data/jailbreak_datasets/jailbreakbench.jsonl
+!data/jailbreak_datasets/obliteratus_builtin.json

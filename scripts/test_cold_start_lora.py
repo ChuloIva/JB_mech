@@ -4,18 +4,43 @@ Test the Cold Start LoRA model for alignment faking behavior.
 Loads Qwen3-4B and attaches the cold start LoRA adapter.
 """
 
+import sys
+import signal
+import readline
 import torch
 from threading import Thread
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 from peft import PeftModel
 
+# Special command marker for Ctrl+R reset
+_RESET_MARKER = "__RESET_CONTEXT__"
+
+
+def _setup_readline_bindings():
+    """Set up custom readline key bindings."""
+    # Bind Ctrl+R to insert reset marker and submit
+    readline.parse_and_bind(r'"\C-r": "__RESET_CONTEXT__\n"')
+
+
+def cleanup_and_exit(model=None):
+    """Clean up resources and exit gracefully."""
+    print("\n\nCleaning up...")
+    if model is not None:
+        del model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    if torch.backends.mps.is_available():
+        torch.mps.empty_cache()
+    print("Goodbye!")
+    sys.exit(0)
+
 # Configuration
-BASE_MODEL = "Qwen/Qwen3-4B"
-LORA_MODEL = "Koalacrown/qwen3-4b-cold-start-lora"
+BASE_MODEL = "Koalacrown/qwen3-4b-multiturn-sft-16bit"
+LORA_MODEL = None  # Set to path/HF repo to load LoRA, or None for base model only
 MAX_SEQ_LENGTH = 4096
 
-def load_model():
-    """Load base model with LoRA adapter."""
+def load_model(lora_model=None):
+    """Load base model, optionally with LoRA adapter."""
     print(f"Loading base model: {BASE_MODEL}")
 
     # Use MPS on Mac, CUDA on Linux/Windows
@@ -39,8 +64,12 @@ def load_model():
         device_map=device,
     )
 
-    print(f"Applying LoRA adapter: {LORA_MODEL}")
-    model = PeftModel.from_pretrained(model, LORA_MODEL)
+    if lora_model:
+        print(f"Applying LoRA adapter: {lora_model}")
+        model = PeftModel.from_pretrained(model, lora_model)
+    else:
+        print("No LoRA adapter specified, using base model only")
+
     model.eval()
 
     return model, tokenizer
@@ -101,37 +130,46 @@ def interactive_chat(model, tokenizer):
     print("\n" + "="*60)
     print("Cold Start LoRA - Interactive Test")
     print("="*60)
-    print("Commands: 'quit' to exit, 'clear' to reset conversation")
+    print("Commands: 'quit' to exit, 'clear' or Ctrl+R to reset, Ctrl+C to quit")
     print("="*60 + "\n")
+
+    # Set up Ctrl+R binding
+    _setup_readline_bindings()
 
     messages = [{"role": "system", "content": DEFAULT_SYSTEM_PROMPT}]
 
-    while True:
-        user_input = input("You: ").strip()
+    try:
+        while True:
+            try:
+                user_input = input("You: ").strip()
+            except EOFError:
+                break
 
-        if user_input.lower() in ['quit', 'exit', 'q']:
-            print("Goodbye!")
-            break
+            if user_input.lower() in ['quit', 'exit', 'q']:
+                break
 
-        if user_input.lower() == 'clear':
-            messages = [{"role": "system", "content": DEFAULT_SYSTEM_PROMPT}]
-            print("Conversation cleared.\n")
-            continue
+            # Handle both 'clear' command and Ctrl+R reset marker
+            if user_input.lower() == 'clear' or _RESET_MARKER in user_input:
+                messages = [{"role": "system", "content": DEFAULT_SYSTEM_PROMPT}]
+                print("Conversation cleared.\n")
+                continue
 
-        if not user_input:
-            continue
+            if not user_input:
+                continue
 
-        messages.append({"role": "user", "content": user_input})
+            messages.append({"role": "user", "content": user_input})
 
-        print("\nAssistant: ", end="", flush=True)
-        streamer = generate_response(model, tokenizer, messages, stream=True)
-        response_text = ""
-        for text in streamer:
-            print(text, end="", flush=True)
-            response_text += text
-        print("\n")
+            print("\nAssistant: ", end="", flush=True)
+            streamer = generate_response(model, tokenizer, messages, stream=True)
+            response_text = ""
+            for text in streamer:
+                print(text, end="", flush=True)
+                response_text += text
+            print("\n")
 
-        messages.append({"role": "assistant", "content": response_text})
+            messages.append({"role": "assistant", "content": response_text})
+    except KeyboardInterrupt:
+        pass  # Let the main handler deal with cleanup
 
 
 def run_test_prompts(model, tokenizer):
@@ -168,18 +206,33 @@ if __name__ == "__main__":
                         help="Run interactive chat mode")
     parser.add_argument("--test", "-t", action="store_true",
                         help="Run test prompts")
+    parser.add_argument("--lora", type=str, default=LORA_MODEL,
+                        help="Path or HF repo for LoRA adapter (optional)")
     args = parser.parse_args()
 
-    # Load model
-    model, tokenizer = load_model()
-    print("Model loaded successfully!\n")
+    model = None
 
-    if args.test:
-        run_test_prompts(model, tokenizer)
-    elif args.interactive:
-        interactive_chat(model, tokenizer)
-    else:
-        # Default: run both
-        run_test_prompts(model, tokenizer)
-        print("\nStarting interactive mode...")
-        interactive_chat(model, tokenizer)
+    # Set up signal handler for Ctrl+C
+    def signal_handler(signum, frame):
+        cleanup_and_exit(model)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        # Load model
+        model, tokenizer = load_model(lora_model=args.lora)
+        print("Model loaded successfully!\n")
+
+        if args.test:
+            run_test_prompts(model, tokenizer)
+        elif args.interactive:
+            interactive_chat(model, tokenizer)
+        else:
+            # Default: run both
+            run_test_prompts(model, tokenizer)
+            print("\nStarting interactive mode...")
+            interactive_chat(model, tokenizer)
+
+        cleanup_and_exit(model)
+    except KeyboardInterrupt:
+        cleanup_and_exit(model)
