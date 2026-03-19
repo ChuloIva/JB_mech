@@ -86,7 +86,7 @@ class SPROConfig:
     use_mean_pooling: bool = False               # Mean pool over response vs last token
 
     # Reward formulation
-    refusal_threshold: float = 0.0               # Score below this = refusal triggered
+    refusal_threshold: float = 0.15              # Score below this = refusal triggered
     refusal_use_cosine: bool = True              # Use cosine similarity vs dot product
 
     # Continuity reward weights (how to combine trajectory signals)
@@ -104,7 +104,7 @@ class SPROConfig:
 
     # Early stopping on refusal
     enable_early_stopping: bool = True           # Abort trajectories that trigger refusal
-    early_stop_threshold: float = -0.3           # Refusal score threshold for early stop
+    early_stop_threshold: float = 0.15           # Refusal score threshold for early stop
     recovery_window: int = 1                     # Turns to attempt recovery before abort
 
     def get_refusal_weight(self, step: int) -> float:
