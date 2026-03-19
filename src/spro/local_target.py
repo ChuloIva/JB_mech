@@ -318,6 +318,80 @@ class LocalTargetWithActivations:
 
         return response, refusal_score, activations
 
+    def score_prompt_refusal(
+        self,
+        messages: List[Dict[str, str]],
+        use_cosine: bool = True,
+    ) -> float:
+        """
+        Score refusal likelihood from prompt only (no generation).
+
+        Much faster than query() - single forward pass instead of autoregressive generation.
+        Captures activations at the pre-generation position to determine if model
+        would refuse or comply.
+
+        Args:
+            messages: Conversation history [{"role": ..., "content": ...}, ...]
+            use_cosine: Use cosine similarity vs dot product
+
+        Returns:
+            Refusal score (higher = less refusing, more likely to comply)
+        """
+        self.clear_cache()
+
+        # Tokenize with generation prompt (captures state at generation start)
+        input_text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        input_ids = self.tokenizer.encode(input_text, return_tensors="pt")
+        input_ids = input_ids.to(self.get_device())
+
+        # Single forward pass (no generation)
+        with torch.no_grad():
+            self.model(input_ids)
+
+        # Compute score from captured activations
+        activations = {k: v.cpu() for k, v in self.activation_cache.items()}
+        return self.compute_refusal_score(activations, use_cosine)
+
+    def score_multi_turn(
+        self,
+        turns: List[Tuple[str, str]],
+        system_prompt: Optional[str] = None,
+        use_cosine: bool = True,
+    ) -> List[float]:
+        """
+        Score refusal at each turn of a multi-turn conversation.
+
+        Args:
+            turns: List of (user_message, assistant_response) tuples
+            system_prompt: Optional system prompt
+            use_cosine: Use cosine similarity vs dot product
+
+        Returns:
+            List of refusal scores, one per turn (scored BEFORE each response)
+        """
+        scores = []
+        messages = []
+
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        for user_msg, assistant_response in turns:
+            # Add user message
+            messages.append({"role": "user", "content": user_msg})
+
+            # Score at this point (before assistant responds)
+            score = self.score_prompt_refusal(messages, use_cosine)
+            scores.append(score)
+
+            # Add assistant response for next turn's context
+            messages.append({"role": "assistant", "content": assistant_response})
+
+        return scores
+
     def __del__(self):
         """Cleanup hooks on deletion."""
         for hook in self._hooks:

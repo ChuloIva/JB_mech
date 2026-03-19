@@ -379,35 +379,37 @@ class SingleExampleSPROTrainer:
 
     async def _execute_plan_with_refusal(self, plan: AttackPlan, plan_idx: int) -> ExecutedEpisode:
         """
-        Execute plan with local target and refusal direction tracking.
+        Execute plan with API generation + local model refusal scoring.
 
-        Uses local target model to capture activations and compute per-turn
-        refusal scores for continuity-based reward.
+        Optimized approach:
+        1. API generates target responses (fast, parallelizable on their infra)
+        2. Local model does single forward pass per turn for activation capture
+           (no generation, just scoring - much faster)
         """
         from .refusal_reward import create_refusal_reward_info
 
         conversation = []
         turn_scores = []
         refusal_scores = []
-        context = []
+        context = []  # For API calls (list of dicts)
+        messages = []  # For local model scoring (list of dicts)
         early_stopped = False
-        breaking_point = None
 
         refusal_triggered_at = None
         turns_since_refusal = 0
 
         for turn_idx, prompt in enumerate(plan.prompts):
-            # Query local target with activation capture
-            response, refusal_score, _ = self.local_target.query_with_refusal_score(
-                prompt,
-                context,
+            # Build message for refusal scoring (before response)
+            messages_for_scoring = messages + [{"role": "user", "content": prompt}]
+
+            # Score refusal via local model (single forward pass, no generation)
+            refusal_score = self.local_target.score_prompt_refusal(
+                messages_for_scoring,
                 use_cosine=self.config.refusal_use_cosine,
             )
-
-            turn_score = score_turn_response(response)
             refusal_scores.append(refusal_score)
 
-            # Check for refusal (early stopping logic)
+            # Check for early stopping before making API call
             if self.config.enable_early_stopping:
                 if refusal_score < self.config.early_stop_threshold:
                     if refusal_triggered_at is None:
@@ -416,21 +418,30 @@ class SingleExampleSPROTrainer:
 
                     # Abort if refusal persists beyond recovery window
                     if turns_since_refusal > self.config.recovery_window:
+                        # Still need a response for the conversation record
+                        response = await self.api_client.query_target(prompt, context)
+                        turn_score = score_turn_response(response)
                         conversation.append((prompt, response))
                         turn_scores.append(turn_score)
                         early_stopped = True
-                        breaking_point = refusal_triggered_at
                         self.log(f"  Plan {plan_idx+1}: Early stop at turn {turn_idx+1} "
                                 f"(refusal={refusal_score:.2f})", indent=2)
                         break
                 else:
                     turns_since_refusal = 0
 
+            # Get response from API (fast, their infrastructure)
+            response = await self.api_client.query_target(prompt, context)
+            turn_score = score_turn_response(response)
+
             conversation.append((prompt, response))
             turn_scores.append(turn_score)
 
+            # Update context for next turn
             context.append({"role": "user", "content": prompt})
             context.append({"role": "assistant", "content": response})
+            messages.append({"role": "user", "content": prompt})
+            messages.append({"role": "assistant", "content": response})
 
         # Compute intent similarities
         prompts_executed = [p for p, _ in conversation]
