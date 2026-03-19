@@ -42,6 +42,7 @@ class LocalTargetWithActivations:
         self._single_layer_mode = False
         self._single_layer = None
         self._layer_to_idx = None
+        self._refusal_separation = None
 
         # Load model
         print(f"Loading local target: {model_name}")
@@ -114,7 +115,8 @@ class LocalTargetWithActivations:
 
         3. Raw tensor of shape (n_layers, hidden_dim)
         """
-        data = torch.load(path, map_location="cpu")
+        # weights_only=False needed because saved file may contain numpy arrays
+        data = torch.load(path, map_location="cpu", weights_only=False)
 
         if isinstance(data, dict):
             if 'refusal_directions' in data:
@@ -140,11 +142,12 @@ class LocalTargetWithActivations:
                 self.refusal_direction = data['direction']  # (hidden_dim,)
                 self._single_layer = data.get('layer', self.layers[0] if self.layers else 0)
                 self._single_layer_mode = True
+                self._refusal_separation = data.get('separation', None)
 
                 print(f"Loaded single-layer refusal probe from {path}")
                 print(f"  Layer: {self._single_layer}")
                 print(f"  Shape: {self.refusal_direction.shape}")
-                print(f"  Separation: {data.get('separation', 'N/A')}")
+                print(f"  Separation: {self._refusal_separation if self._refusal_separation else 'N/A'}")
 
             else:
                 raise ValueError(f"Unknown dict format in {path}. Expected 'refusal_directions' or 'direction' key.")
@@ -158,6 +161,16 @@ class LocalTargetWithActivations:
     def get_device(self) -> torch.device:
         """Get the device of the model."""
         return next(self.model.parameters()).device
+
+    @property
+    def refusal_layer(self) -> Optional[int]:
+        """Get the refusal direction layer (single-layer mode only)."""
+        return self._single_layer if self._single_layer_mode else None
+
+    @property
+    def refusal_separation(self) -> float:
+        """Get the refusal direction separation score."""
+        return self._refusal_separation if self._refusal_separation is not None else 0.0
 
     def query(
         self,
